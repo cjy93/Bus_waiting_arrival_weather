@@ -18,18 +18,17 @@ package.check <- lapply(pacotes, FUN = function(x) {
 })
 
 # BusRoute.csv
-top_bus <- c('51','61','961','66','67','14','30','143','10','147','178','197','154','167','166','174','196','171','2','12','21','170','970','13')
 
 busroute <- read_csv('data/bus_route_overall.csv')
 busroute$BusStopCode <- as.character(busroute$BusStopCode)
 busroute <- busroute[c('BusStopCode', 'Direction', 'Distance', 'ServiceNo', 'StopSequence')] %>%
   dplyr::filter(ServiceNo %in% top_bus)
 
-busNode <- read_csv("data/busstops.csv")
+busNode <- read_csv("data/busstops_with_planning_area_XY.csv")
 
 
 ## Origin Destination data
-data<- read.csv("data/origin_subset_10000.csv")
+data<- read.csv("data/origin_subset_10000.csv")  ## Jia Yi-- The original one is too big for debugging, use this temporarily
 ##################################################### Jia Yi #########################################################
 
 # statistics
