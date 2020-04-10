@@ -1,0 +1,75 @@
+---
+title: "Extract_subzone_st_contains"
+author: "Chan Jia Yi"
+date: "4/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## adapted from
+https://stackoverflow.com/questions/43456524/how-to-find-which-polygon-a-point-belong-to-via-sf
+
+https://datatofish.com/export-dataframe-to-csv-in-r/
+```{r}
+packages = c('sf', 'tmap', 'tidyverse')
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p,character.only = T)
+}
+```
+
+## Read singapore shape files
+```{r}
+mpsz <- st_read(dsn = "data/geospatial", 
+                layer = "MP14_SUBZONE_WEB_PL")
+mpsz <- st_transform(mpsz,4326)
+```
+## import my busstop dataframe
+```{r}
+busstops <- read_csv("data/busstops_with_planning_area_XY.csv")
+glimpse(busstops)
+```
+## turn ^^ into simple features object
+```{r ,echo= TRUE, eval=TRUE, message=FALSE,warning=FALSE,fig.width=10}
+busstops_sf <- map2(busstops$Longitude, busstops$Latitude, ~st_point(c(.x, .y))) %>% 
+  st_sfc(crs = 4326) %>% 
+  st_sf(busstops[,-(1:2)], .)
+
+busstops_sf
+```
+## Finally, append the original table columns (you want) with the subzone!
+```{r ,echo= TRUE, eval=TRUE, message=FALSE,warning=FALSE,fig.width=10}
+subzone<- bind_cols(
+  busstops,
+  mpsz[as.numeric(st_within(busstops_sf, mpsz)),]
+) %>% 
+  select(BusStopCode, planning_area,Longitude, Latitude, subzone_name=SUBZONE_N) %>% 
+  mutate(subzone_name = str_to_title(subzone_name))
+```
+
+# Save to csv
+```{r ,echo= TRUE, eval=TRUE, message=FALSE,warning=FALSE,fig.width=10}
+write.csv(subzone,"data/busstop_lonlat_subzone.csv", row.names = FALSE)
+
+```
+
+
+```{r ,echo= TRUE, eval=TRUE, message=FALSE,warning=FALSE,fig.width=10}
+
+```
+
+```{r ,echo= TRUE, eval=TRUE, message=FALSE,warning=FALSE,fig.width=10}
+
+```
+
+```{r ,echo= TRUE, eval=TRUE, message=FALSE,warning=FALSE,fig.width=10}
+
+```
+
+```{r ,echo= TRUE, eval=TRUE, message=FALSE,warning=FALSE,fig.width=10}
+
+```
