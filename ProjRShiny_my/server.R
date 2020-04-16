@@ -46,29 +46,31 @@ server <- function(input, output) {
     
     ## Mengyong Plot Proportionate Symbol Map
     
+    
     location_my_map <- reactive({
-        location_my %>% dplyr::filter(PlanningArea %in% input$planning_region_my)%>% 
-            dplyr::filter(Time == input$time_my)%>%
-            dplyr::filter(Day == input$week_my)
+        location_my %>% dplyr::filter(planning_area == input$planning_region_my)%>% 
+            dplyr::filter(TIME_PER_HOUR == input$time_my)%>%
+            dplyr::filter(DAY_TYPE == input$week_my)
     })
     
     output$map_my <- renderLeaflet({
         map_data <- location_my_map()
-        map_data %>% leaflet(width = 800, height = 600)%>%
+        map_data %>% leaflet(width = 1600, height = 1200)%>%
             addProviderTiles("CartoDB", group = "CartoDB") %>% 
             addCircleMarkers(lng = ~lon, 
                              lat = ~lat,
                              radius = ~tap_in_out_radius,
                              fillOpacity = 0.75,
                              label = ~Description, 
-                             popup = ~paste0("<b>", Description, "</b>", "<br/>", 'Tap in Volume: ', TapIns, "<br/>", 'Tap out volume: ', TapOuts),
-                             color =  ~pal(PlanningArea)
+                             popup = ~paste0('Tap in Volume: ', TOTAL_TAP_IN_VOLUME, "<br/>", 'Tap out volume: ', TOTAL_TAP_OUT_VOLUME),
+                             color =  ~pal(planning_area)
                              ) %>%
             setMaxBounds(lng1 = 103.801959 + .25, 
                          lat1 = 1.32270 + .25, 
                          lng2 = 103.801959 - .25, 
-                         lat2 = 1.32270 - .25)
-
+                         lat2 = 1.32270 - .25)%>%
+            addLayersControl(baseGroups =unique(planning_area_list_my)
+            )
     })
     
     output$tbl_my <- DT::renderDataTable({
@@ -89,3 +91,6 @@ server <- function(input, output) {
 
 }
 
+#location_my['BusStopCode', 'Description', 'RoadName', 'planning_area', 'TOTAL_TAP_IN', 'TOTAL_TAP_OUT_VOLUME', 'TIME_PER_HOUR', 'lon', 'lat', 'tap_in_out_radius']%>%
+#    rename(c(TapIns = TOTAL_TAP_IN, TapOuts = TOTAL_TAP_OUT_VOLUME, Time = TIME_PER_HOUR, PlanningArea = planning_area)) %>% 
+#    dplyr::filter(planning_area %in% input$planning_region_my)
