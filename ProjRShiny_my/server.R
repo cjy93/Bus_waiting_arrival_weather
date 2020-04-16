@@ -44,16 +44,7 @@ server <- function(input, output) {
     output$polygon_jy <- renderImage({plot(mpsz, col = "#cceae7", border = NA)})
     #output$flow
     opar <- par(mar = c(0,0,2,0))
-    ## Ploting the points
-    # output$flowDom_jy <- leaflet() %>% sp::plot(mpsz, col = "#cceae7", border = NA) %>%
-    # 
-    # 
-    # plotMapDomFlows(mat = flowSel, spdf = mpbus, spdfid = "BUS_STOP_N", w = inflows, wid = "id",
-    #                 wvar = "w", wcex = 0.05, add = TRUE,
-    #                 legend.flows.pos = "topright",
-    #                 legend.flows.title = "Nb. of commuters") %>%
-    # title("Dominant Flows of Commuters") %>%
-    # mtext(text = "singapore bus,2020", side = 4, line = -1, adj = 0.01, cex = 0.8)   ############## not work with map separated
+
     
 }
 
