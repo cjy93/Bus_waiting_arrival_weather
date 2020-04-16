@@ -84,10 +84,31 @@ ui <- dashboardPage(
                         
                         sidebarLayout(
                             sidebarPanel(
+                                helpText("Select Planning Area"),
                                 
+                                selectInput(inputId = "planning_region_my", 
+                                            label = "Planning Region",
+                                            choices = planning_area_list_my,
+                                            selected = "Ang Mo Kio"),
+                                selectInput(inputId = "week_my", 
+                                            label = "Day of the Week",
+                                            choices = c('Weekday' = 'WEEKDAY',
+                                                        'Weekend' = 'WEEKENDS/HOLIDAY'),
+                                            selected = "WEEKDAY"),
+                                
+                                radioButtons(inputId = 'time_my',
+                                             label = 'Time of the Day',
+                                             choices = c('06:00' = 6,'07:00' = 7,'08:00' = 8,'09:00' = 9,'10:00' = 10,'11:00' = 11,'12:00' = 12,'13:00' = 13,
+                                                         '14:00' = 14,'15:00' = 15,'16:00' = 16,'17:00' = 17,'18:00' = 18,'19:00' = 19,'20:00' = 20, '21:00' = 21,
+                                                         '22:00' = 22,'23:00' = 23
+                                                         ),
+                                             selected = 8)
                             ),
                             
                             mainPanel(
+                                #put in viz here
+                                leafletOutput("map_my"),
+                                dataTableOutput("tbl_my")
                                 
                             )
                         )

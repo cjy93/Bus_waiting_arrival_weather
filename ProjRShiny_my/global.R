@@ -7,7 +7,11 @@ pacotes = c("shiny", "shinydashboard", "shinythemes", "plotly", "shinycssloaders
             'dplyr','ggplot2','reshape2','tidyverse','plotly','igraph','ggraph','tidygraph',
             'visNetwork', 'lubridate', 'ggmap','visNetwork', 
             'ggiraph', 'sf', 'tmap',
-            'flows','sp')
+            'flows','sp'
+            # added in by mengyong
+            ,'leaflet.extras', 'geosphere', 'RColorBrewer'
+            
+            )
 
 # Run the following command to verify that the required packages are installed. If some package
 # is missing, it will be installed automatically
@@ -17,19 +21,26 @@ package.check <- lapply(pacotes, FUN = function(x) {
   }
 })
 
-# BusRoute.csv
-top_bus <- c('51','61','961','66','67','14','30','143','10','147','178','197','154','167','166','174','196','171','2','12','21','170','970','13')
+##################################################### Import data here #########################################################
 
-busroute <- read_csv('data/bus_route_overall.csv')
-busroute$BusStopCode <- as.character(busroute$BusStopCode)
-busroute <- busroute[c('BusStopCode', 'Direction', 'Distance', 'ServiceNo', 'StopSequence')] %>%
-  dplyr::filter(ServiceNo %in% top_bus)
+# busstop volume
+busstop_volume <- read.csv("data/passenger volume by busstop.csv")
+colnames(busstop_volume)[5] = "BusStopCode"
 
-busNode <- read_csv("data/busstops.csv")
+# busstop information
+busstop_information <- read.csv("data/busstops_with_planning_area.csv")[3:8]
+busstop_information$planning_area = str_to_title(busstop_information$planning_area)
+busstop_information <- filter(busstop_information, planning_area != "Invalid")
+busstop_information$planning_area <- as.character(busstop_information$planning_area)
+busstop_information$planning_area[busstop_information$planning_area %in% c('Central Water Catchment', 'Mandai', 'Marina South', 'Museum', 'Newton', 'Orchard', 'Outram', 
+                                                                           'Seletar', 'Rochor', 'Singapore River', 'Tanglin', 'Southern Islands', 'River Valley', 'Paya Lebar', 
+                                                                           'Straits View', 'Tengah')] <- "Others"
+#busstop_information <- filter(busstop_information, planning_area %in% c("Ang Mo Kio", 'Bishan')) #to reduce size of the problem, to delete later
 
 
 ## Origin Destination data
 data<- read.csv("data/origin_subset_10000.csv")
+
 ##################################################### Jia Yi #########################################################
 
 # statistics
@@ -57,3 +68,21 @@ sumflow_jy <- mystats$sumflows
 # Plot Flows diagram
 mpsz <- readShapeSpatial("data/geospatial/MP14_SUBZONE_WEB_PL.shp") # plot singapore shape
 mpbus <- readShapeSpatial("data/BusStopLocation_Jan2020/BusStop.shp") # plot busstop
+
+##################################################### Mengyong #########################################################
+
+busstop_volume_lat_long_my <- dplyr::inner_join(busstop_volume, busstop_information, by ='BusStopCode')
+
+location_my <- busstop_volume_lat_long_my %>%
+  #dplyr::filter(DAY_TYPE == c('WEEKDAY'))%>%
+  #dplyr::filter(TIME_PER_HOUR == 10)%>%
+  dplyr::group_by(BusStopCode)%>%
+  dplyr::arrange(desc(BusStopCode))%>%
+  rename(c(lat = Latitude, lon = Longitude))
+
+location_my$tap_in_out_radius <- (location_my$TOTAL_TAP_IN_VOLUME + location_my$TOTAL_TAP_OUT_VOLUME)**(1/2)/6
+location_my <- location_my[c('planning_area', 'DAY_TYPE', 'TIME_PER_HOUR', 'BusStopCode', 'Description', 'RoadName', 'TOTAL_TAP_IN_VOLUME', 'TOTAL_TAP_OUT_VOLUME', 'lon', 'lat', 'tap_in_out_radius')]%>%
+  rename(c(Day = DAY_TYPE, TapIns = TOTAL_TAP_IN_VOLUME, TapOuts = TOTAL_TAP_OUT_VOLUME, Time = TIME_PER_HOUR, PlanningArea = planning_area)) 
+
+planning_area_list_my <-sort(unique(location_my$PlanningArea))
+pal <- colorFactor(palette = 'Set3', domain = planning_area_list_my)
