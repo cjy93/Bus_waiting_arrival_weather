@@ -84,8 +84,6 @@ ui <- dashboardPage(
                         
                         sidebarLayout(
                             sidebarPanel(
-                                helpText("Select Planning Area"),
-                                
                                 selectInput(inputId = "planning_region_my", 
                                             label = "Planning Region",
                                             choices = planning_area_list_my,

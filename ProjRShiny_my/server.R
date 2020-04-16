@@ -54,7 +54,7 @@ server <- function(input, output) {
     
     output$map_my <- renderLeaflet({
         map_data <- location_my_map()
-        map_data %>% leaflet(width = 1600, height = 1600)%>%
+        map_data %>% leaflet(width = 800, height = 600)%>%
             addProviderTiles("CartoDB", group = "CartoDB") %>% 
             addCircleMarkers(lng = ~lon, 
                              lat = ~lat,
@@ -67,9 +67,8 @@ server <- function(input, output) {
             setMaxBounds(lng1 = 103.801959 + .25, 
                          lat1 = 1.32270 + .25, 
                          lng2 = 103.801959 - .25, 
-                         lat2 = 1.32270 - .25)%>%
-            addLayersControl(baseGroups =unique(planning_area_list_my)
-            )
+                         lat2 = 1.32270 - .25)
+
     })
     
     output$tbl_my <- DT::renderDataTable({
