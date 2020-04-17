@@ -50,32 +50,40 @@ ui <- dashboardPage(
             
             tabItem(tabName = 'Flow_Diagrams',
                     fluidPage(
-                        titlePanel("Flow Maps"),
                         
-                        sidebarLayout(
-                            sidebarPanel(
-                                helpText("Select passenger flow size"),
-                                
-                                selectInput("flow_input", 
-                                            label = "flow k",
-                                            choices = c(5000, 
-                                                        10000
-                                                        ),
-                                            selected = 10000),
-                                
-                                sliderInput("range", 
-                                            label = "Range of interest:",
-                                            min = 0, max = 100, value = c(0, 100))
-                            ),
+                        titlePanel("Flow Maps"),
+                        fluidRow(
                             
-                            mainPanel(
-                                verbatimTextOutput("flow_jy"),
-                                plotOutput("ploygon_jy")
-                                #plotOutput("flowDom_jy")
-                                #leafletOutput("flowDom_jy"),
+                            sidebarLayout(
+                                sidebarPanel(
+                                    helpText("Select passenger flow size"),
+                                    
+                                    selectInput("flow_input", 
+                                                label = "flow k",
+                                                choices = c(5000, 
+                                                            10000
+                                                            ),
+                                                selected = 10000),
+                                    
+                                    sliderInput("range", 
+                                                label = "Range of interest:",
+                                                min = 0, max = 100, value = c(0, 100))
+                                ),
+                                column(
+                                    mainPanel(
+                                        verbatimTextOutput("flow_jy"),
+                                        #plotOutput("ploygon_jy"),  # not working
+                                        plotOutput("map_jy"),
+                                        visNetworkOutput("vizNW_jy"),
+                                        sankeyNetworkOutput("sankey_jy", width = "100%", height = "500px")
+                                        #plotOutput("flowDom_jy")
+                                        #leafletOutput("flowDom_jy"),
+                                    ), width = 10
+                                ) # of column
                             )
-                        )
-                    )
+                            
+                        ) # end of fluidRow
+                    ) # end of fluidPage
             ), #end of tabname "flow"  
             
             tabItem(tabName = 'ProportionalSymbolMap_Diagrams',

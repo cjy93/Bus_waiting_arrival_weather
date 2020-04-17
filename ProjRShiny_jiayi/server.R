@@ -41,7 +41,7 @@ server <- function(input, output) {
     ## Node weights
     inflows <- data.frame(id = colnames(myflows), w = colSums(myflows))
     
-    ## Plot dominant flows map
+    ## OLD: Plot dominant flows map
     output$polygon_jy <- renderImage({plot(mpsz, col = "#cceae7", border = NA)})
     #output$flow
     opar <- par(mar = c(0,0,2,0))
@@ -55,6 +55,28 @@ server <- function(input, output) {
     #                 legend.flows.title = "Nb. of commuters") %>%
     # title("Dominant Flows of Commuters") %>%
     # mtext(text = "singapore bus,2020", side = 4, line = -1, adj = 0.01, cex = 0.8)   ############## not work with map separated
+    
+    # Subzone Flow map
+    ## plot of graph starts here
+    map_jy <- ggplot(lay) + map_gg2+ map_gg3 +# ggraph(lay) 
+        geom_edge_arc(aes(edge_width = weight,   # draw edges as arcs
+                          circular = FALSE,show.legend = TRUE),
+                      data = edges_for_plot4, curvature = 0.33,
+                      alpha = 0.5) +
+        scale_edge_width_continuous(range = c(0.5,50),             # scale for edge widths
+                                    guide = FALSE) +
+        geom_node_point(aes(size = weight),show.legend = FALSE, shape = 21,            # draw node
+                        fill = "white", color = "black",
+                        stroke = 0.5) +
+        scale_size_continuous(range = c(1, 10), guide = FALSE) +    # scale for node sizes
+        geom_node_text(aes(label = name),show.legend = FALSE, repel = TRUE, size = 3,
+                       color = "white", fontface = "bold") +
+        maptheme
+    output$map_jy <- renderPlot({
+        plot(map_jy)
+        }, height = 600, width = 2000)
+    
+    
     ############################################# Meng Yong ########################################################
     
     
