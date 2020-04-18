@@ -1,0 +1,22 @@
+"0",""
+"0","busstops <- read_csv('data/busstops_with_planning_area_XY.csv')"
+"2","Missing column names filled in: 'X1' [1]"
+"2","Parsed with column specification:
+cols(
+  X1 = [32mcol_double()[39m,
+  `Unnamed: 0` = [32mcol_double()[39m,
+  BusStopCode = [32mcol_double()[39m,
+  Description = [31mcol_character()[39m,
+  Latitude = [32mcol_double()[39m,
+  Longitude = [32mcol_double()[39m,
+  RoadName = [31mcol_character()[39m,
+  planning_area = [31mcol_character()[39m,
+  X = [32mcol_double()[39m,
+  Y = [32mcol_double()[39m
+)
+"
+"0","busstops$BusStopCode <- as.character(busstops$BusStopCode)"
+"0","busstops <- busstops[c('BusStopCode', 'Description', 'RoadName', 'planning_area', 'Latitude', 'Longitude')] "
+"0","busstops <- busstops[busstops$BusStopCode %in% as.list(unique(busroute['BusStopCode']))[['BusStopCode']], ] "
+"0",""
+"0","busstops"

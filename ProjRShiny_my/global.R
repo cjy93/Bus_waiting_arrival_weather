@@ -72,7 +72,6 @@ mpbus <- readShapeSpatial("data/BusStopLocation_Jan2020/BusStop.shp") # plot bus
 ##################################################### Mengyong #########################################################
 
 busstop_volume_lat_long_my <- dplyr::inner_join(busstop_volume, busstop_information, by ='BusStopCode')
-
 location_my <- busstop_volume_lat_long_my %>%
   #dplyr::filter(DAY_TYPE == c('WEEKDAY'))%>%
   #dplyr::filter(TIME_PER_HOUR == 10)%>%
@@ -81,7 +80,8 @@ location_my <- busstop_volume_lat_long_my %>%
   rename(c(lat = Latitude, lon = Longitude))
 
 location_my$tap_in_out_radius <- (location_my$TOTAL_TAP_IN_VOLUME + location_my$TOTAL_TAP_OUT_VOLUME)**(1/2)/6
-planning_area_list_my <-sort(unique(location_my$planning_area))
+location_my <- location_my[c('planning_area', 'DAY_TYPE', 'TIME_PER_HOUR', 'BusStopCode', 'Description', 'RoadName', 'TOTAL_TAP_IN_VOLUME', 'TOTAL_TAP_OUT_VOLUME', 'lon', 'lat', 'tap_in_out_radius')]%>%
+  rename(c(Day = DAY_TYPE, TapIns = TOTAL_TAP_IN_VOLUME, TapOuts = TOTAL_TAP_OUT_VOLUME, Time = TIME_PER_HOUR, PlanningArea = planning_area)) 
+
+planning_area_list_my <-sort(unique(location_my$PlanningArea))
 pal <- colorFactor(palette = 'Set3', domain = planning_area_list_my)
-
-
