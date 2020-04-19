@@ -113,17 +113,50 @@ ui <- dashboardPage(
                     )
             ), #end of tabname "ProportionalSymbolMap_Diagrams" 
             
+            
+            
+          
             tabItem(tabName = 'Centrality',
                     fluidPage(
                         titlePanel("Centrality"),
                         
                         sidebarLayout(
-                            sidebarPanel(
-                                
-                            ),
-                            
-                            mainPanel(
-                            )
+                          sidebarPanel(
+                            selectInput(inputId = "planning_region_my_2", 
+                                        label = "Planning Region",
+                                        choices = c('Singapore', planning_area_list_my),
+                                        selected = "Ang Mo Kio"),
+                            sliderInput(
+                              inputId = "betweenness_my", 
+                              label = "Betweenness Centrality", 
+                              min = 0, 
+                              max = 1, 
+                              value = c(0, 1)),
+                            sliderInput(
+                              inputId = "closeness_my", 
+                              label = "Closeness Centrality", 
+                              min = 0, 
+                              max = 1, 
+                              value = c(0, 1)),
+                            sliderInput(
+                              inputId = "degree_my", 
+                              label = "Degree Centrality", 
+                              min = 0, 
+                              max = 1, 
+                              value = c(0, 1)),
+                            sliderInput(
+                              inputId = "eigen_my", 
+                              label = "Eigenvalue Centrality", 
+                              min = 0, 
+                              max = 1, 
+                              value = c(0, 1)),
+                          ),
+                          
+                          mainPanel(
+                            #put in viz here
+                            leafletOutput("map_my_centrality"),
+                            DT::dataTableOutput("tbl_my_2")
+                          )
                         )
                     )
             ), #end of tabname "Centrality" 
@@ -163,5 +196,3 @@ ui <- dashboardPage(
         )# end of TabItems
     ) #end of dashboardBody
 )
-
-#https://shiny.rstudio.com/gallery/soccer-player-similarity.html

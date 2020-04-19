@@ -55,7 +55,7 @@ server <- function(input, output) {
     output$map_my <- renderLeaflet({
         map_data <- location_my_map()
         map_data %>% leaflet(width = 800, height = 600)%>%
-            addProviderTiles("CartoDB", group = "CartoDB") %>% 
+            addProviderTiles("CartoDB") %>% 
             addCircleMarkers(lng = ~lon, 
                              lat = ~lat,
                              radius = ~tap_in_out_radius,
@@ -72,7 +72,8 @@ server <- function(input, output) {
     
     output$tbl_my <- DT::renderDT({
         DT::datatable(
-            location_my_map(),
+            #location_my_map(),
+            location_my_map()[c('PlanningArea', 'Day', 'Time', 'RoadName', 'TapIns', 'TapOuts')],
             extensions = "Scroller",
             style = "bootstrap",
             class = "compact",
@@ -83,6 +84,91 @@ server <- function(input, output) {
                 scroller = TRUE,
                 dom = 'tp')
         )
+    })
+    
+    ## Mengyong Plot Centrality Map
+    my_map_centrality_node <- reactive({
+      if (input$planning_region_my_2 == 'Singapore') {
+        map_table %>% 
+          dplyr::filter(between.f >= input$betweenness_my[1] & between.f <= input$betweenness_my[2])%>%
+          dplyr::filter(closeness.f >= input$closeness_my[1] & closeness.f <= input$closeness_my[2])%>%
+          dplyr::filter(eigen.f >= input$eigen_my[1] & eigen.f <= input$eigen_my[2])%>%
+          dplyr::filter(degree.f >= input$degree_my[1] & degree.f <= input$degree_my[2])
+      }
+      else {
+        map_table %>% dplyr::filter(planning_area %in% input$planning_region_my_2)%>%
+          dplyr::filter(between.f >= input$betweenness_my[1] & between.f <= input$betweenness_my[2])%>%
+          dplyr::filter(closeness.f >= input$closeness_my[1] & closeness.f <= input$closeness_my[2])%>%
+          dplyr::filter(eigen.f >= input$eigen_my[1] & eigen.f <= input$eigen_my[2])%>%
+          dplyr::filter(degree.f >= input$degree_my[1] & degree.f <= input$degree_my[2])      
+      }
+    })
+    
+    my_map_centrality_edge <- reactive({
+      if (input$planning_region_my_2 == 'Singapore') {
+        edge_table %>% 
+          dplyr::filter(between.f >= input$betweenness_my[1] & between.f <= input$betweenness_my[2])%>%
+          dplyr::filter(closeness.f >= input$closeness_my[1] & closeness.f <= input$closeness_my[2])%>%
+          dplyr::filter(eigen.f >= input$eigen_my[1] & eigen.f <= input$eigen_my[2])%>%
+          dplyr::filter(degree.f >= input$degree_my[1] & degree.f <= input$degree_my[2])
+      }
+      else {
+        edge_table %>% dplyr::filter(planning_area %in% input$planning_region_my_2)%>%
+          dplyr::filter(between.f >= input$betweenness_my[1] & between.f <= input$betweenness_my[2])%>%
+          dplyr::filter(closeness.f >= input$closeness_my[1] & closeness.f <= input$closeness_my[2])%>%
+          dplyr::filter(eigen.f >= input$eigen_my[1] & eigen.f <= input$eigen_my[2])%>%
+          dplyr::filter(degree.f >= input$degree_my[1] & degree.f <= input$degree_my[2])
+      }
+        })    
+    
+    output$map_my_centrality <- renderLeaflet({
+      map_nodes <- my_map_centrality_node()
+      map_edges <- my_map_centrality_edge()
+      
+     map3 <- map_nodes %>% leaflet(width = 800, height = 600)%>%
+        addProviderTiles("CartoDB") %>% 
+        setMaxBounds(lng1 = 103.801959 + .25, 
+                     lat1 = 1.32270 + .25, 
+                     lng2 = 103.801959 - .25, 
+                     lat2 = 1.32270 - .25)
+    
+    for(i in 1:nrow(map_edges)){
+      map3 <- addPolylines(map3, lat = as.numeric(map_edges[i, c('lat.f', 'lat.t')]), 
+                           lng = as.numeric(map_edges[i, c('long.f', 'long.t')]),
+                           #weight = 0.5,
+                           color = 'blue'
+      )
+    }
+
+    for(i in 1:nrow(map_nodes)){
+      map3<-addCircleMarkers(map3, lat = as.numeric(map_nodes[i, 'lat.f']), 
+                             lng = as.numeric(map_nodes[i,'long.f']),
+                             radius =(as.numeric(map_nodes[i, 'combined.f'])*2),
+                             color='red',
+                             fillOpacity = 0.75,
+                             label = map_nodes[i,'id.Description'],
+                             popup = ~paste0("<b>", map_nodes[i,'Description'], "</b>", "<br/>", 'Betweenness Centrality: ', round(map_nodes[i,'between.f'],3), "<br/>", 
+                                             'Closeness Centrality: ', round(map_nodes[i,'closeness.f'],3), "<br/>", 'Eigenvalue Centrality: ', round(map_nodes[i,'eigen.f'],3), 
+                                             "<br/>", 'Degree Centrality: ', round(map_nodes[i,'degree.f'],3))
+      )}
+     map3
+    })
+    
+    output$tbl_my_2 <- DT::renderDT({
+      DT::datatable(
+        #my_map_centrality_node()
+        my_map_centrality_node()[c('planning_area', 'BusStopCode', 'RoadName', 'Description', 'between.f', 'closeness.f', 'eigen.f', 'degree.f')]%>%
+          rename(c(PlanningArea = planning_area, BetweennessCentrality = between.f, ClosenessCentrality = closeness.f, EigenvalueCentrality= eigen.f, DegreeCentrality = degree.f)),
+        extensions = "Scroller",
+        style = "bootstrap",
+        class = "compact",
+        width = "100%",
+        options = list(
+          deferRender = TRUE,
+          scrollY = 300,
+          scroller = TRUE,
+          dom = 'tp')
+      )
     })
 
 }
