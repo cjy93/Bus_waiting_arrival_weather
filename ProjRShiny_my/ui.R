@@ -17,35 +17,49 @@ ui <- dashboardPage(
                                  menuItem('Download', tabName = 'Download', icon = icon("download"))# tabs are here!
                                 )
                     ), # end of DashboardSiderBar
+
     dashboardBody(
         tabItems(
             tabItem(tabName = 'Home',
                     fluidPage(
-                        titlePanel("Overview"),
-                        
-                        sidebarLayout(
-                            sidebarPanel(
-                                helpText("Create demographic maps with 
-               information from the 2010 US Census."),
-                                
-                                selectInput("var", 
-                                            label = "Choose a variable to display",
-                                            choices = c("Percent White", 
-                                                        "Percent Black",
-                                                        "Percent Hispanic", 
-                                                        "Percent Asian"),
-                                            selected = "Percent White"),
-                                
-                                sliderInput("range", 
-                                            label = "Range of interest:",
-                                            min = 0, max = 100, value = c(0, 100))
-                            ),
+                       # titlePanel("Home"),
+                        fluidRow(
+                            column(12,
+                                   img(src = "SBS-Transit-bus-5.jpg", height = 300),
+                                   h1('Re-imaginging Bus Transport Network in Singapore'),
+                                   p("Singapore's public transport use rose to hit a record high in 2018, with a total of 7.54 million trips made on buses or trains each day."),
+                                   p("Here's what may come across your mind: Do you ever have experiences where a bus ride that is supposed to be short and quick took way longer 
+                                   than expected? Are you frustrated that the bus stops at every stop even though there's nobody boarding or alighting? And why do we have so many 
+                                   bus stops that almost nobody uses?"),
+                                   p("What if we can reimagine the public bus network in Singapore through data?"),
+                                   p("In this project, we will use use data visualization techniques to map out all transportation nodes in Singapore and re-propose a different way 
+                                     of organizing our bus services, which include bus stops, bus routes, and connectivity within region and from regions to regions."),
+                                  h2("Main Packages Used"),
+                                  p("Shiny is available on CRAN, so you can install it in the usual way from your R console:"),
+                                  code('install.packages("shiny")'),
+                                  br(),
+                                  code('install.packages(dplyr)'),
+                                  br(),
+                                  code('install.packages(tidyverse)'),
+                                  br(),
+                                  code('install.packages(leaflet)'),
+                                  br(),
+                                  code('install.packages(tidygraph)'),
+                                  br(),
+                                  code('install.packages(flows)'),
+                                  br(),
+                                  code('install.packages(sf)'),
+                                  br(),
+                                  h2("Links"),
+                                  a("Github", href = "https://github.com/cjy93/LTA_bus_analysis"),
+                                  br(),
+                                  a("Wikipedia", href = "https://wiki.smu.edu.sg/1920t2isss608/Group08_proposal"),
+                                  
+
+                                  )
                             
-                            mainPanel(
-                                textOutput("selected_var")
-                            )
                         )
-                    )
+                        )
             ), #end of tabname "home" 
             
             tabItem(tabName = 'Flow_Diagrams',

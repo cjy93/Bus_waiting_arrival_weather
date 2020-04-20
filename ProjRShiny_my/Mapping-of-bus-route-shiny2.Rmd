@@ -76,7 +76,7 @@ busroute_busstop_aggregated <- busroute_busstop %>%
   group_by(from, to) %>%
   summarise(Weight = n()) %>%
   filter(from!=to) %>%
-  filter(Weight > 1) %>%
+  filter(Weight > 0) %>%
   filter(from!='Invalid') %>%
   filter(to!='Invalid') %>%
   ungroup()
@@ -102,6 +102,18 @@ nodes_my
 bus_graph <- tbl_graph(nodes = nodes_my, edges = busroute_busstop_aggregated, directed = TRUE)
 bus_graph
 ```
+```{r}
+USA_CC = components(bus_graph, mode="strong")
+USA_CC$no
+#USA_CC$csize
+BigComp = which.max(USA_CC$csize)
+BigComp
+
+Main_USairports = induced_subgraph(bus_graph, 
+    which(bus_graph$membership == BigComp))
+Main_USairports
+```
+
 
 
 ```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}

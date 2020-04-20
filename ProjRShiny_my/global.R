@@ -112,7 +112,7 @@ busroute_busstop_aggregated <- busroute_busstop %>%
   group_by(from, to) %>%
   summarise(Weight = n()) %>%
   filter(from!=to) %>%
-  filter(Weight > 1) %>%
+  filter(Weight > 0) %>%
   ungroup()
 busroute_busstop_aggregated$from <- as.character(busroute_busstop_aggregated$from)
 busroute_busstop_aggregated$to <- as.character(busroute_busstop_aggregated$to)
@@ -124,6 +124,9 @@ nodes_my$id <- as.character(nodes_my$id)
 
 #create graph structure
 bus_graph <- tbl_graph(nodes = nodes_my, edges = busroute_busstop_aggregated, directed = TRUE)
+
+#remove disconnected nodes
+
 
 #extract centrality
 bus_graph=bus_graph%>%mutate(betweenness_centrality = centrality_betweenness(normalized = TRUE)) %>%mutate(closeness_centrality = centrality_closeness(normalized = TRUE)) %>%mutate(degree_centrality=centrality_degree(mode='out',normalized = TRUE))%>%mutate(eigen_centrality=centrality_eigen(weights=bus_graph$Weight,directed=TRUE))
