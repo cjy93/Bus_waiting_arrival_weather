@@ -30,11 +30,11 @@ busstop_volume$BusStopCode <- as.character(busstop_volume$BusStopCode)
 
 
 # busstop information
-busstop_information <- read.csv("data/busstops_with_planning_area.csv")[3:8]%>%
+busstops <- read.csv("data/busstop_lonlat_subzone_District.csv")%>%
   filter(planning_area != "Invalid")
-busstop_information$planning_area <- as.character(busstop_information$planning_area)
-busstop_information$BusStopCode <- as.character(busstop_information$BusStopCode)
-busstop_information$planning_area[busstop_information$planning_area %in% c('Central Water Catchment', 'Mandai', 'Marina South', 'Museum', 'Newton', 'Orchard', 'Outram', 
+busstops$planning_area <- as.character(busstops$planning_area)
+busstops$BusStopCode <- as.character(busstops$BusStopCode)
+busstops$planning_area[busstops$planning_area %in% c('Central Water Catchment', 'Mandai', 'Marina South', 'Museum', 'Newton', 'Orchard', 'Outram', 
                                                                            'Seletar', 'Rochor', 'Singapore River', 'Tanglin', 'Southern Islands', 'River Valley', 'Paya Lebar', 
                                                                            'Straits View', 'Tengah')] <- "Others"
 
@@ -42,7 +42,7 @@ busstop_information$planning_area[busstop_information$planning_area %in% c('Cent
 busroute <- read_csv('data/bus_route_overall.csv')
 busroute$BusStopCode <- as.character(busroute$BusStopCode)
 busroute <- busroute[c('BusStopCode', 'Direction', 'Distance', 'ServiceNo', 'StopSequence')]
-busroute <- busroute[busroute$BusStopCode %in% as.list(unique(busstop_information['BusStopCode']))[['BusStopCode']], ] 
+busroute <- busroute[busroute$BusStopCode %in% as.list(unique(busstops['BusStopCode']))[['BusStopCode']], ] 
 
 ## Origin Destination data
 data<- head(read.csv("data/origin_subset_10000.csv"),100)
@@ -77,14 +77,14 @@ mpbus <- readShapeSpatial("data/BusStopLocation_Jan2020/BusStop.shp") # plot bus
 
 ##################################################### Mengyong Proportionate symbol map#########################################################
 
-busstop_volume_lat_long_my <- dplyr::inner_join(busstop_volume, busstop_information, by ='BusStopCode')
+busstop_volume_lat_long_my <- dplyr::inner_join(busstop_volume, busstops, by ='BusStopCode')
 location_my <- busstop_volume_lat_long_my %>%
   dplyr::group_by(BusStopCode)%>%
   dplyr::arrange(desc(BusStopCode))%>%
   rename(c(lat = Latitude, lon = Longitude))
 
 location_my$tap_in_out_radius <- (location_my$TOTAL_TAP_IN_VOLUME + location_my$TOTAL_TAP_OUT_VOLUME)**(1/2)/6
-location_my <- location_my[c('planning_area', 'DAY_TYPE', 'TIME_PER_HOUR', 'BusStopCode', 'Description', 'RoadName', 'TOTAL_TAP_IN_VOLUME', 'TOTAL_TAP_OUT_VOLUME', 'lon', 'lat', 'tap_in_out_radius')]%>%
+location_my <- location_my[c('planning_area', 'subzone_name', 'DAY_TYPE', 'TIME_PER_HOUR', 'BusStopCode', 'Description', 'RoadName', 'TOTAL_TAP_IN_VOLUME', 'TOTAL_TAP_OUT_VOLUME', 'lon', 'lat', 'tap_in_out_radius')]%>%
   rename(c(Day = DAY_TYPE, TapIns = TOTAL_TAP_IN_VOLUME, TapOuts = TOTAL_TAP_OUT_VOLUME, Time = TIME_PER_HOUR, PlanningArea = planning_area)) 
 
 planning_area_list_my <-sort(unique(location_my$PlanningArea))
@@ -100,7 +100,7 @@ busroute_2 <- busroute_2[c('BusStopCode_dest', 'Direction', 'ServiceNo', 'StopSe
 busstops_from_to <- dplyr::inner_join(busroute, busroute_2, by =c('StopSequence', 'ServiceNo', 'Direction'))
 
 #join the two tables together
-busroute_busstop <- dplyr::inner_join(busstops_from_to, busstop_information, by ='BusStopCode')
+busroute_busstop <- dplyr::inner_join(busstops_from_to, busstops, by ='BusStopCode')
 keeps <- c('BusStopCode', 'BusStopCode_dest')
 busroute_busstop <- busroute_busstop[, keeps, drop = FALSE] %>% 
   rename(from = BusStopCode) %>%
@@ -118,7 +118,7 @@ busroute_busstop_aggregated$from <- as.character(busroute_busstop_aggregated$fro
 busroute_busstop_aggregated$to <- as.character(busroute_busstop_aggregated$to)
 
 #nodes
-nodes_my <- busstop_information %>%
+nodes_my <- busstops %>%
   rename(id = BusStopCode)
 nodes_my$id <- as.character(nodes_my$id)
 
@@ -142,9 +142,9 @@ node3=data.frame(cbind(node1,node2))
 
 edge_table <- node3 %>%
   rename(c(long.f = V1, lat.f = V2, long.t = V1.1, lat.t = V2.1, between.f = V3, closeness.f = V4, eigen.f = V5, degree.f = V6))%>%
-  dplyr::left_join(busstop_information, by =c("long.f"= "Longitude", "lat.f" = "Latitude")) 
+  dplyr::left_join(busstops, by =c("long.f"= "Longitude", "lat.f" = "Latitude")) 
 
-keeps <- c("long.f","lat.f","long.t","lat.t", "planning_area", "between.f", "closeness.f", "eigen.f","degree.f" )
+keeps <- c("long.f","lat.f","long.t","lat.t", "planning_area", 'subzone_name', "between.f", "closeness.f", "eigen.f","degree.f" )
 edge_table <- edge_table[ , (names(edge_table) %in% keeps)]
 
 range01 <- function(x){(x-min(x))/(max(x)-min(x))}
@@ -157,12 +157,12 @@ edge_table$degree.f <-range01(edge_table$degree.f)
 # get node table
 map_table <- plot_vector2 %>%
   rename(c(long.f = V1, lat.f = V2, between.f = V3, closeness.f = V4, eigen.f = V5, degree.f = V6))%>%
-  dplyr::left_join(busstop_information, by =c("long.f"= "Longitude", "lat.f" = "Latitude")) 
+  dplyr::left_join(busstops, by =c("long.f"= "Longitude", "lat.f" = "Latitude")) 
 
-map_table$between.f <-range01(map_table$between.f)
-map_table$closeness.f <-range01(map_table$closeness.f)
-map_table$eigen.f <-range01(map_table$eigen.f)
-map_table$degree.f <-range01(map_table$degree.f)
+map_table$between.f <-round(range01(map_table$between.f),3)
+map_table$closeness.f <-round(range01(map_table$closeness.f),3)
+map_table$eigen.f <-round(range01(map_table$eigen.f),3)
+map_table$degree.f <-round(range01(map_table$degree.f),3)
 
 #get the radius of the bubbles
 map_table$combined.f = (map_table$between.f*3+1)**(3/4) + (map_table$closeness.f*3+1)**(3/4) + (map_table$eigen.f*3+1)**(3/4) + (map_table$degree.f*3+1)**(3/4)

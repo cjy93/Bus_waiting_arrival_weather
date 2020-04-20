@@ -47,13 +47,13 @@ subzone<- bind_cols(
   busstops,
   mpsz[as.numeric(st_within(busstops_sf, mpsz)),]
 ) %>% 
-  select(BusStopCode, planning_area,Longitude, Latitude, subzone_name=SUBZONE_N) %>% 
+  select(BusStopCode, planning_area,Longitude, Latitude, Description, RoadName, subzone_name=SUBZONE_N) %>% 
   mutate(subzone_name = str_to_title(subzone_name))
 ```
 
 # Save to csv
 ```{r ,echo= TRUE, eval=TRUE, message=FALSE,warning=FALSE,fig.width=10}
-write.csv(subzone,"data/busstop_lonlat_subzone.csv", row.names = FALSE)
+write.csv(subzone,"data/busstop_lonlat_subzone_updated.csv", row.names = FALSE)
 
 ```
 

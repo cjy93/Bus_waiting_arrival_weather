@@ -163,7 +163,7 @@ map_table
 
 ```{r}
 
-write.csv(map_table ,"bus_graph_view.csv", row.names = FALSE)
+#write.csv(map_table ,"bus_graph_view.csv", row.names = FALSE)
 
 
 ```
