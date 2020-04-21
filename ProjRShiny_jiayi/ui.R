@@ -131,62 +131,68 @@ ui <- dashboardPage(
             
             tabItem(tabName = 'Flow_Map',
                     fluidPage(
-                        
-                        titlePanel("Flow Maps"),
+                        title = "Flow Maps",
+                        #titlePanel("Flow Maps"),
+                        h1("Flow Maps"),
+                        h3("For filtering of Planning Area OR Subzone:"),
+                        h5("Please filter them at 'Aggregate Filter' tab"),
+                        plotOutput("map_jy"),
+                        hr(),
                         fluidRow(
+                          column(3,  
+                            helpText("Select passenger flow size"),
+                            radioButtons("radio_flowsize", h3("Choose type of selection criteria"),
+                                         choices = list("By Passenger Volume" = 'passenger', 
+                                                        "By Number of Bus Services" = 'bus'),selected = 'passenger'),
                             
-                            sidebarLayout(
-                                sidebarPanel(
-                                    helpText("Select passenger flow size"),
-                                    
-                                    selectInput("flow_input", 
-                                                label = "flow k",
-                                                choices = c(20, 
-                                                            50,
-                                                            100,
-                                                            300,
-                                                            500,
-                                                            1000,
-                                                            1500,
-                                                            2000,
-                                                            3000,
-                                                            "more than 5000"
-                                                            ),
-                                                selected = 100),
-                                    
-                                    sliderInput("flowsize", 
-                                                label = "Range of interest:",
-                                                min = 0, max = 100000, value = c(0, 100)),
-                                    sliderInput("busstopNetworksize", 
-                                                label = "Range of interest:",
-                                                min = 0, max = 100, value = c(0, 100)),
-                                    selectInput("district", 
-                                                label = "flow k",
-                                                choices = c(20, 
-                                                            50,
-                                                            100,
-                                                            300,
-                                                            500,
-                                                            1000,
-                                                            1500,
-                                                            2000,
-                                                            3000,
-                                                            "more than 5000"
-                                                ),
-                                                selected = 100)
+                           
+                            conditionalPanel( condition = "input.radio_flowsize=='passenger'",         
+                                sliderInput("flowsize_passenger", 
+                                            label = "Range of interest:",
+                                            min = 0, max = 10000, value = c(0, 100))
                                 ),
-                                column(
-                                    mainPanel(
-                                        verbatimTextOutput("flow_jy"),
-                                        #plotOutput("ploygon_jy"),  # not working
-                                        plotOutput("map_jy"),
-                                        visNetworkOutput("vizNW_jy"),
-                                        sankeyNetworkOutput("sankey_jy", width = "100%", height = "500px")
+                            conditionalPanel( condition = "input.radio_flowsize=='bus'", 
+                                sliderInput("busstopNetworksize", 
+                                            label = "Range of interest:",
+                                            min = 0, max = 100, value = c(0, 100))
+                                )), # end of first column 3
+                          column(3,  
+                            selectizeInput(
+                                'district_from', 'From District', choices = "initialisation"  , #initialise
+                                multiple = TRUE,
+                                options = list(maxItems=10,
+                                               placeholder = 'Please select one or more options below',
+                                               onInitialize = I('function() { this.setValue(""); }')
+                                )
+                            ), #end of selectizeInput to District from
+                            selectizeInput(
+                                'district_to', 'To District', choices = "initialisation"  , #initialise
+                                multiple = TRUE,
+                                options = list(maxItems=10,
+                                               placeholder = 'Please select one or more options below',
+                                               onInitialize = I('function() { this.setValue(""); }')
+                                )
+                            )),
+                          column(3,
+                                 uiOutput("flowsize_slider_ui")   
+                                 #sliderInput("flowsize", 
+                                 #            label = "Range of interest:",
+                                 #            min = 0, max = 100000, value = c(0, 100))
+                                 )
+                                 #end of selectizeInput to district To
+                                    #),width = 2
+                                #), #end of column for sidebarpanel
+                                #column(
+                                    #mainPanel(
+                                        #verbatimTextOutput("flow_jy"),
+                                        
+                                        # visNetworkOutput("vizNW_jy"),
+                                        # sankeyNetworkOutput("sankey_jy", width = "100%", height = "500px")
                                         #plotOutput("flowDom_jy")
                                         #leafletOutput("flowDom_jy"),
-                                    ), width = 10
-                                ) # of column
-                            )
+                                    #), width = 10
+                                #) # of column
+                            #)
                             
                         ) # end of fluidRow
                     ) # end of fluidPage

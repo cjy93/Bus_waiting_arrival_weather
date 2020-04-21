@@ -18,8 +18,8 @@ server <- function(input, output, session) {
     #            "Planning Area" = 'PA')
     # })
     # read in data (this data will change so we put in server)
-    node_SZ <- read_csv("data/node_flowmap.csv")
-    edge_id2_SZ <- read_csv("data/edge_flowmap.csv")
+    node_SZ <- read_csv("data/node_flowmap_SZ.csv")
+    edge_id2_SZ <- read_csv("data/edge_flowmap_SZ_passenger.csv")
     
     output$ex_out <- reactive({
         str(c(input$radio,input$pa_from, input$pa_to, input$sz_from, input$sz_to)
@@ -41,18 +41,8 @@ server <- function(input, output, session) {
     }) # end of renderDataTable FROM
     # https://community.rstudio.com/t/evaluation-error-operation-not-allowed-without-an-active-reactive-context/18468/3
     
-    # # make sure the To table has available locations the From pick can go to
-    # availableTo <- reactive({
-    #   if (input$radio=="PA"){
-    #     ## KIV
-    #     busstops%>% filter(busstops$planning_area %in% input$pa_to)
-    #   }
-    #   else{
-    #     busstops <- busstops%>% filter(busstops$subzone_name %in% node_SZ)
-    #   }
-    # }) #End of reactive
-    # reference
-    # edge_id2_SZ <- edge_id2_SZ[which(edge_id2_SZ$from %in% node2$id) ,] 
+    
+ 
     
     # plot the TO Table
     output$mytableTo = DT::renderDataTable({
@@ -75,11 +65,37 @@ server <- function(input, output, session) {
     })
     
     # https://shiny.rstudio.com/articles/selectize.html
+    # https://stackoverflow.com/questions/21465411/r-shiny-passing-reactive-to-selectinput-choices
     observe({
       updateSelectizeInput(session, 'sz_to', choices=sz_selection_from(), server=TRUE)
     })
-    ###
+    ### end of update "To" list based on edges available
     
+    # to affect the district option in flow map
+    ### Very Important: To update the "from" list in district based on the from in Edges
+    sz_selection_district_from <- reactive({
+      nodeidFrom <- node_SZ[which(node_SZ$name %in% input$sz_from) ,] 
+      edgeid <- edge_id2_SZ[which(edge_id2_SZ$from %in% nodeidFrom$id),] 
+      nodeidTo <- node_SZ[which(node_SZ$id %in% edgeid$from) ,]
+      nodeDistrictFrom <- unique(nodeidTo$district)
+      nodeDistrictFrom #grab the last variable
+    })
+    observe({
+      updateSelectizeInput(session, 'district_from', choices=sz_selection_district_from(), server=TRUE) # not work did not grab only the available district
+    })
+    
+    # to affect the district option in flow map
+    ### Very Important: To update the "from" list in district based on the To in Edges
+    sz_selection_district_to <- reactive({
+      nodeidFrom <- node_SZ[which(node_SZ$name %in% input$sz_from) ,] 
+      edgeid <- edge_id2_SZ[which(edge_id2_SZ$to %in% nodeidFrom$id),] 
+      nodeidTo <- node_SZ[which(node_SZ$id %in% edgeid$to) ,]
+      nodeDistrictFrom <- unique(nodeidTo$district)
+      nodeDistrictFrom #grab the last variable
+    })
+    observe({
+      updateSelectizeInput(session, 'district_to', choices=sz_selection_district_to(), server=TRUE) # not work did not grab only the available district
+    })
   
     
     # Download table "from"
@@ -170,49 +186,90 @@ server <- function(input, output, session) {
       }
     })
     
-    #################
-    # 
-    # filtered_df <- reactive({
-    #   
-    #   res <- df %>% filter(current_grade >= input$current)
-    #   res <- res %>% filter(projected_grade >= input$projected)
-    #   res <- res %>% filter(age >= input$age[1] & age <= input$age[2])
-    #   res <- res %>% filter(ethnicity %in% input$ethnicity | is.null(input$ethnicity))
-    #   
-    #   if(input$previous == TRUE)
-    #     res <- res %>% filter(previous_sale == 1)
-    #   
-    #   if(input$warm == TRUE)
-    #     res <- res %>% filter(warm_lead == 1)
-    #   
-    #   res
-    #   
-    # })
+    edge_id2_SZ_filtered_reactive <- reactive({
+      if (input$radio=="SZ"){
+        # filter the Edges with temporary variable "node2" and "node3"
+        node2 <- node_SZ %>% filter(name %in% dataInput_From_SZ() )
+        edge_id2_SZ_filtered <- edge_id2_SZ[which(edge_id2_SZ$from %in% node2$id) ,] 
+        
+        node3 <- node_SZ %>% filter(name %in% dataInput_To_SZ())
+        edge_id2_SZ_filtered <- edge_id2_SZ_filtered[which(edge_id2_SZ_filtered$to %in% node3$id) ,]
+        edge_id2_SZ_filtered
+      }
+    })
+    
+    node_SZ_filtered_reactive <- reactive({
+      if (input$radio=="SZ"){
+        # filter nodes 
+        node_SZ_filtered <- node_SZ %>% filter(name %in% dataInput_From_SZ() | name %in% dataInput_To_SZ())
+        node_SZ_filtered
+      }
+      
+    })
+    
+    observe({
+      print('asdadasdsad')
+      print(edge_id2_SZ_filtered_reactive())
+      print('zczxc')
+      print(node_SZ_filtered_reactive())
+    })
+    
+    #edges_for_plot_SZ_reactive <- reactive({
+    #  edges_for_plot_SZ <- edge_id2_SZ_filtered_reactive() %>% 
+    #      inner_join(node_SZ_filtered_reactive() %>% select(id, x, y), by = c('from' = 'id')) %>%
+    #      inner_join(node_SZ_filtered_reactive() %>% select(id, x, y), by = c('to' = 'id'))
+    #  edges_for_plot_SZ
+    #})
+    
+    edges_for_plot4_SZ_reactive <- reactive({
+      edges_for_plot_SZ <- edge_id2_SZ_filtered_reactive() %>% 
+        inner_join(node_SZ_filtered_reactive() %>% select(id, x, y), by = c('from' = 'id')) %>%
+        inner_join(node_SZ_filtered_reactive() %>% select(id, x, y), by = c('to' = 'id'))
+      
+      
+      edges_for_plot4_SZ <- edges_for_plot_SZ %>%
+        select(c('from','to','DAY_TYPE','weight','category','x.x','y.x','x.y','y.y')) %>%
+        rename(x = x.x) %>%
+        rename(y = y.x) %>%
+        rename(xend = x.y) %>%
+        rename(yend = y.y)
+      
+      # change columns from numerical to numeric then back to character (due to error msgs)
+      edges_for_plot4_SZ$x    <- as.numeric(as.character(edges_for_plot4_SZ$x))
+      edges_for_plot4_SZ$y    <- as.numeric(as.character(edges_for_plot4_SZ$y))
+      edges_for_plot4_SZ$xend <- as.numeric(as.character(edges_for_plot4_SZ$xend))
+      edges_for_plot4_SZ$yend <- as.numeric(as.character(edges_for_plot4_SZ$yend))
+      
+      edges_for_plot4_SZ
+    })
+    
+ 
     output$map_jy <- renderPlot({
     # filter based on "Aggregate Filter" tab
-    if (input$radio=="SZ"){
-      # filter the Edges with temporary variable "node2" and "node3"
-      node2 <- node_SZ %>% filter(name %in% dataInput_From_SZ() )
-      edge_id2_SZ <- edge_id2_SZ[which(edge_id2_SZ$from %in% node2$id) ,] 
-      
-      node3 <- node_SZ %>% filter(name %in% dataInput_To_SZ())
-      edge_id2_SZ <- edge_id2_SZ[which(edge_id2_SZ$to %in% node3$id) ,]
-      # filter nodes 
-      node_SZ <- node_SZ %>% filter(name %in% dataInput_From_SZ() | name %in% dataInput_To_SZ())
-    }
+    #if (input$radio=="SZ"){
+    #  # filter the Edges with temporary variable "node2" and "node3"
+    #  node2 <- node_SZ %>% filter(name %in% dataInput_From_SZ() )
+    #  edge_id2_SZ <- edge_id2_SZ[which(edge_id2_SZ$from %in% node2$id) ,] 
+    #  
+    #  node3 <- node_SZ %>% filter(name %in% dataInput_To_SZ())
+    #  edge_id2_SZ <- edge_id2_SZ[which(edge_id2_SZ$to %in% node3$id) ,]
+    #  # filter nodes 
+    #  node_SZ <- node_SZ %>% filter(name %in% dataInput_From_SZ() | name %in% dataInput_To_SZ())
+    #}
 
-   
-    #node_SZ_new <- node_SZ
+    node_SZ_filtered = node_SZ_filtered_reactive()
+    edge_id2_SZ_filtered = edge_id2_SZ_filtered_reactive()
   
     
-    g_SZ <- graph_from_data_frame(edge_id2_SZ, directed = TRUE, vertices = node_SZ)
-    edges_for_plot_SZ <- edge_id2_SZ %>% 
-      inner_join(node_SZ %>% select(id, x, y), by = c('from' = 'id')) %>%
-      inner_join(node_SZ %>% select(id, x, y), by = c('to' = 'id')) 
+    g_SZ <- graph_from_data_frame(edge_id2_SZ_filtered, directed = TRUE, vertices = node_SZ_filtered)
+    #edges_for_plot_SZ <- edges_for_plot_SZ_reactive()
+    #edges_for_plot_SZ <- edge_id2_SZ %>% 
+    #  inner_join(node_SZ_filtered %>% select(id, x, y), by = c('from' = 'id')) %>%
+    #  inner_join(node_SZ_filtered %>% select(id, x, y), by = c('to' = 'id')) 
     
-    print(edges_for_plot_SZ)
+    #print(edges_for_plot_SZ)
     
-    node_SZ$weight = degree(g_SZ)
+    node_SZ_filtered$weight = degree(g_SZ)
     
     maptheme <- theme(panel.grid = element_blank()) +
       theme(axis.text = element_blank()) +
@@ -223,7 +280,7 @@ server <- function(input, output, session) {
       theme(panel.background = element_rect(fill = "#596673")) +
       theme(plot.margin = unit(c(0, 0, 0.5, 0), 'cm'))
     
-    node_pos_SZ <- node_SZ %>%
+    node_pos_SZ <- node_SZ_filtered %>%
       select(x, y)  # node positions must be called x, y
     lay_SZ <- create_layout(g_SZ, 'manual',
                             node.positions = node_pos_SZ)
@@ -236,37 +293,31 @@ server <- function(input, output, session) {
     # convert all columns to numeric
     # https://stackoverflow.com/questions/19146354/batch-convert-columns-to-numeric-type
     
-    edges_for_plot4_SZ <- edges_for_plot_SZ %>%
-      select(c('from','to','DAY_TYPE','weight','category','x.x','y.x','x.y','y.y')) %>%
-      rename(x = x.x) %>%
-      rename(y = y.x) %>%
-      rename(xend = x.y) %>%
-      rename(yend = y.y)
+    edges_for_plot4_SZ <- edges_for_plot4_SZ_reactive()
+    #edges_for_plot4_SZ <- edges_for_plot_SZ %>%
+    #  select(c('from','to','DAY_TYPE','weight','category','x.x','y.x','x.y','y.y')) %>%
+    #  rename(x = x.x) %>%
+    #  rename(y = y.x) %>%
+    #  rename(xend = x.y) %>%
+    #  rename(yend = y.y)
     
-    # change columns from numerical to numeric then back to character (due to error msgs)
-    edges_for_plot4_SZ$x    <- as.numeric(as.character(edges_for_plot4_SZ$x))
-    edges_for_plot4_SZ$y    <- as.numeric(as.character(edges_for_plot4_SZ$y))
-    edges_for_plot4_SZ$xend <- as.numeric(as.character(edges_for_plot4_SZ$xend))
-    edges_for_plot4_SZ$yend <- as.numeric(as.character(edges_for_plot4_SZ$yend))
+    ## change columns from numerical to numeric then back to character (due to error msgs)
+    #edges_for_plot4_SZ$x    <- as.numeric(as.character(edges_for_plot4_SZ$x))
+    #edges_for_plot4_SZ$y    <- as.numeric(as.character(edges_for_plot4_SZ$y))
+    #edges_for_plot4_SZ$xend <- as.numeric(as.character(edges_for_plot4_SZ$xend))
+    #edges_for_plot4_SZ$yend <- as.numeric(as.character(edges_for_plot4_SZ$yend))
     
     lay_SZ$x <-  as.numeric(as.character(lay_SZ$x))
     lay_SZ$y <-  as.numeric(as.character(lay_SZ$y))
     
     
     
-    # create bins for colours
-    edges_for_plot4_SZ <- edges_for_plot4_SZ %>%
-      mutate(
-        bin = cut(weight, seq(0,max(edges_for_plot4_SZ$weight),2), na.rm=TRUE)) %>%
-      ungroup()
+    # # create bins for colours  ## not working for
+    # edges_for_plot4_SZ <- edges_for_plot4_SZ %>%
+    #   mutate(
+    #     bin = cut(weight, seq(0,max(edges_for_plot4_SZ$weight),2), na.rm=TRUE)) %>%
+    #   ungroup()
     
-    
-    
-    
-    
-    
-    
- 
     
     map_jy <- ggplot(lay_SZ) + map_gg2_SZ+ map_gg3_SZ +# ggraph(lay) 
         geom_edge_arc(aes(edge_width = weight,   # draw edges as arcs
@@ -275,7 +326,7 @@ server <- function(input, output, session) {
                       alpha = 0.5) +
         scale_edge_width_continuous(range = c(0.5,5),             # scale for edge widths
                                     guide = FALSE) +
-        geom_node_point(aes(size = weight, color= as.factor(district)),show.legend = FALSE         # draw node
+        geom_node_point(aes(size = weight, color= as.factor(district)),show.legend = TRUE         # draw node
         ) +
         scale_size_continuous(range = c(1, 10), guide = FALSE) +    # scale for node sizes
         geom_node_text(aes(label = name),show.legend = FALSE, repel = TRUE, size = 3,
@@ -283,7 +334,16 @@ server <- function(input, output, session) {
         maptheme
     
         plot(map_jy)
-    }, height = 600, width = 2000)
+    }, height = 400, width = 1600) # 
+    
+    # create slider widget based on size of the edges flows
+    
+    output$flowsize_slider_ui <- renderUI({
+      sliderInput("flowsize", 
+                  label = "Range of interest123:",
+                  min = 0, max = max(edges_for_plot4_SZ_reactive()$weight), value = c(0, 100))
+    })
+
     
     ################## HeatMap JY ####################################
     # # Remove the matrix diagonal
