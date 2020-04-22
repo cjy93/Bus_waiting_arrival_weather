@@ -7,7 +7,12 @@ pacotes = c("shiny", "shinydashboard", "shinythemes", "plotly", "shinycssloaders
             'dplyr','ggplot2','reshape2','tidyverse','plotly','igraph','ggraph','tidygraph',
             'visNetwork', 'lubridate', 'ggmap','visNetwork', 
             'ggiraph', 'sf', 'tmap','rgdal',
-            'flows','sp')
+            'flows','sp','shinycssloaders','heatmaply',
+            'MASS','ERSA','car')
+            # 
+
+# Options for Spinner
+options(spinner.color="#0275D8", spinner.color.background="#ffffff", spinner.size=2)
 
 # Run the following command to verify that the required packages are installed. If some package
 # is missing, it will be installed automatically
@@ -16,6 +21,19 @@ package.check <- lapply(pacotes, FUN = function(x) {
     install.packages(x, dependencies = TRUE)
   }
 })
+
+########################### Data Prep JY #############################
+# passenger volume per busstops
+passVol <- read_csv("data/passenger volume by busstop.csv") 
+passVol <- passVol %>% rename(BusStopCode = PT_CODE) %>%
+  group_by(BusStopCode) %>% summarise(frequencyIn = sum(TOTAL_TAP_IN_VOLUME),frequencyOut = sum(TOTAL_TAP_OUT_VOLUME))
+# centrality dataset
+central <- read_csv("data/centralityTable.csv")
+central$BusStopCode <- as.character(central$BusStopCode)
+pass_central <- inner_join(passVol, central, by = "BusStopCode") %>%
+  rename(closeness=closeness.f, between=between.f,eigen=eigen.f,degree=degree.f) 
+
+  
 
 
 # BusStops
@@ -78,221 +96,90 @@ total$id <- as.character(total$id)
 
 
 
-
+## Jia Yi-- The original one is too big for debugging, use this temporarily
 ## Origin Destination data
-data<- read.csv("data/origin_subset_10000.csv")  ## Jia Yi-- The original one is too big for debugging, use this temporarily
-##################################################### Jia Yi #########################################################
-
-# statistics
-flow <- data %>%
-  select('DAY_TYPE','TIME_PER_HOUR','BusStopCode_x','BusStopCode_y','TOTAL_TRIPS') %>%
-  unite(from_to, BusStopCode_x,BusStopCode_y, sep = "_", remove=FALSE) %>%
-  group_by(from_to) %>% 
-  summarise(Frequency = sum(TOTAL_TRIPS))%>%
-  separate(from_to, c("from", "to"))
-myflows <- prepflows(mat = flow, i = "from", j = "to", fij = "Frequency")
-myflows[1:4,1:4]
-
-## Get statistics about the matrix
-statmat_jy <-  statmat(mat = myflows, output = "none", verbose = TRUE)
-## Plot Lorenz curve only
-lorenz_jy <- statmat(mat = myflows, output = "lorenz", verbose = FALSE)
-## Graphics only
-graphic_jy <- statmat(mat = myflows, output = "all", verbose = FALSE)
-## Statistics only
-mystats <- statmat(mat = myflows, output = "none", verbose = FALSE)
-mystats_jy <- str(mystats)
-## Sum of flows
-sumflow_jy <- mystats$sumflows
+# Bus flow
+#data<- read.csv("data/origin_dest_cleaned_jy_subset.csv") 
 
 # Plot Flows diagram
 mpsz <- readShapeSpatial("data/geospatial/MP14_SUBZONE_WEB_PL.shp") # plot singapore shape
 mpbus <- readShapeSpatial("data/BusStopLocation_Jan2020/BusStop.shp") # plot busstop
 
-###** JiaYi Flow Diagram Starts here
-## Analysing by Subzones
+## Analysing by Subzones or PA
 SZ <- read_csv("data/subzoneData.csv") %>%
-  rename(subzone_name = SUBZONE_N)
+  rename(subzone_name = SUBZONE_N) 
+PA <- read_csv("data/PAData.csv") %>%
+  rename(planning_area = PLN_AREA_N)
 
+
+#####################################################  Apps Jia Yi #########################################################
+############################### Flow Map #####################################
 ## Create node
-busstops <- read_csv('data/busstop_lonlat_subzone_district.csv') %>%
-  mutate(subzone_name = toupper(subzone_name)) #capitalise the column in subzone
-busstops <- busstops %>% select(c('subzone_name','BusStopCode','district'))
-
-# Now inner join the 2 tables so i can find the weights
-node <- dplyr::inner_join(busstops, SZ, by =c('subzone_name')) %>%
-  select(c('OBJECTID','district','subzone_name','X_ADDR','Y_ADDR'))%>%
-  group_by(OBJECTID,subzone_name,district,X_ADDR,Y_ADDR) %>%  
-  summarise(weight = n()) %>%
-  # filter(weight > 1) %>%
-  ungroup()  %>%
-  rename(id = OBJECTID) %>%
-  rename(name = subzone_name)%>%
-  rename(x = X_ADDR) %>%
-  rename(y = Y_ADDR)
-
-# Create Edges
-## For weights for subzone we change to TOTAL_TRIPS and DAY_TYPE as column
-edges <- read_csv("data/origin_subset_10000.csv") %>%
-  select(-c('YEAR_MONTH','PT_TYPE','ORIGIN_PT_CODE','DESTINATION_PT_CODE','RoadName_Origin','Description_Origin','RoadName_Destination','Description_Destination'))
-# we need to append "subzone_origin" and "subzone_dest" so we can calculate weights based on busstops in these subzones
-edges_join <- merge(edges, busstops, by.x='BusStopCode_x', by.y = 'BusStopCode') %>% 
-  rename(subzone_ori = subzone_name)
-edges_join2 <- merge(edges_join, busstops, by.x='BusStopCode_y', by.y = 'BusStopCode') %>% 
-  rename(subzone_dest = subzone_name) 
-# remove the intermediate dataframe from cache
-remove(edges_join) 
-remove(edges)
-edges <- edges_join2 %>%
-  #select('subzone_ori','subzone_dest') %>%
-  rename(from =subzone_ori) %>%
-  rename(to = subzone_dest) %>%
-  # Group by "from","to" and add the "DAY_TYPE" so we can choose in RShiny
-  group_by(from,to,DAY_TYPE) %>%
-  arrange(X1) %>%
-  # make weights to be according to "TOTAL_TRIPS"
-  summarise(weight = sum(TOTAL_TRIPS))%>%
-  # filter(weight>1) %>%
-  ungroup() 
-
-# add a column for category so it fit into the online model
-edges <- cbind(edges,category=1)
+busstops <- busstops %>% dplyr::select(c('planning_area','subzone_name','BusStopCode','district'))
 
 
-
-# change the from and to in "edges" to match with the "node" id
-
-get_index = node %>% select(c('id','name'))
-
-edge_id <- merge(edges, get_index, by.x = "from", by.y = "name") %>%
-  select(-c("from")) %>%
-  rename(from=id) 
-edge_id2 <- merge(edge_id, get_index, by.x = "to", by.y = "name") %>%
-  select(-c("to")) %>%
-  rename(to=id)
-
-## rearrange dataframe for edge_id such that "from" and "to" is in first 2 columns
-edge_id2$to <- as.character(edge_id2$to)
-edge_id2$from <- as.character(edge_id2$from)
-edge_id2 <- edge_id2 %>%
-  select(c('from','to','DAY_TYPE','weight','category'))
-
-# change node id also to as.character
-node$id <- as.character(node$id)
 
 # ShapeFile for SZ
 # First read in the shapefile, using the path to the shapefile and the shapefile name minus the
 # extension as arguments
-shapefile <- readOGR("data/geospatial", "MP14_SUBZONE_WEB_PL")
+shapefile_SZ <- readOGR("data/geospatial", "MP14_SUBZONE_WEB_PL")
 
 # Next the shapefile has to be converted to a dataframe for use in ggplot2
-shapefile_df <- fortify(shapefile)
+shapefile_df_SZ <- fortify(shapefile_SZ)
 
 # Now the shapefile can be plotted as either a geom_path or a geom_polygon.
 
 ## This is to draw the shape file of Singapore outline
-map_gg2 <- geom_polygon(data = shapefile_df, 
+map_gg2_SZ <- geom_polygon(data = shapefile_df_SZ, 
                         aes(x = long, y = lat, group = group),
                         color = 'gray', fill = 'gray', size = .2) 
-map_gg3 <- geom_path(data = shapefile_df, 
+map_gg3_SZ <- geom_path(data = shapefile_df_SZ, 
                      aes(x = long, y = lat, group = group),
                      color = 'red', fill = 'red', size = .2)
-map_gg4 <- ggplot() + map_gg2+ map_gg3 +geom_point() +
+map_gg4_SZ <- ggplot() + map_gg2_SZ + map_gg3_SZ +geom_point() +
   annotate("point", x = 31596, y = 29220, colour = "blue")
 
+# prepared the file outside and call them in for app to run faster
+########### this is still the subset file ##########################
 
 
 
-# Create Graph object starts here
-g <- graph_from_data_frame(edge_id2, directed = TRUE, vertices = node)
-edges_for_plot <- edge_id2 %>%
-  inner_join(node %>% select(id, x, y), by = c('from' = 'id')) %>%
-  inner_join(node %>% select(id, x, y), by = c('to' = 'id')) 
 
 
-node$weight = degree(g)
 
-maptheme <- theme(panel.grid = element_blank()) +
-  theme(axis.text = element_blank()) +
-  theme(axis.ticks = element_blank()) +
-  theme(axis.title = element_blank()) +
-  theme(legend.position = "bottom") +
-  theme(panel.grid = element_blank()) +
-  theme(panel.background = element_rect(fill = "#596673")) +
-  theme(plot.margin = unit(c(0, 0, 0.5, 0), 'cm'))
-
-node_pos <- node %>%
-  select(x, y)  # node positions must be called x, y
-lay <- create_layout(g, 'manual',
-                     node.positions = node_pos)
-
-lay <- lay[ -c(1,2) ]
-# add node degree for scaling the node sizes
-lay$weight <- degree(g)
-# We pass the layout lay and use ggraph's geoms geom_edge_arc and geom_node_point for plotting:
-
-# convert all columns to numeric
-# https://stackoverflow.com/questions/19146354/batch-convert-columns-to-numeric-type
-
-edges_for_plot4 <- edges_for_plot %>%
-  select(c('from','to','DAY_TYPE','weight','category','x.x','y.x','x.y','y.y')) %>%
-  rename(x = x.x) %>%
-  rename(y = y.x) %>%
-  rename(xend = x.y) %>%
-  rename(yend = y.y)
-
-# change columns from numerical to numeric then back to character (due to error msgs)
-edges_for_plot4$x    <- as.numeric(as.character(edges_for_plot4$x))
-edges_for_plot4$y    <- as.numeric(as.character(edges_for_plot4$y))
-edges_for_plot4$xend <- as.numeric(as.character(edges_for_plot4$xend))
-edges_for_plot4$yend <- as.numeric(as.character(edges_for_plot4$yend))
-
-lay$x <-  as.numeric(as.character(lay$x))
-lay$y <-  as.numeric(as.character(lay$y))
-
-edge_id2$to <- as.character(edge_id2$to)
-edge_id2$from <- as.character(edge_id2$from)
-edge_id2 <- edge_id2 %>%
-  select(c('from','to','DAY_TYPE','weight','category'))
-
-# create bins for colours
-edges_for_plot4 <- edges_for_plot4 %>%
-  mutate(
-    bin = cut(weight, seq(0,max(edges_for_plot4$weight),2), na.rm=TRUE)) %>%
-  ungroup()
 
 #******* VizNetwork*****************
-# VisNetwork Interactive Graphs
-#To make my interactive graph have a dropdown menu, they always make us select by id, in my case of `node$id`, it does not show any relevant information. So we have to make tne `node$name` the column of id
-# Edit Node data to make id = name
-node_inter <- node %>% 
-  select(-c("id")) %>%
-  rename(id = name)
-
-# make the `from` and `to` of edges link to the newly created `id` in `node_inter`
-edges_inter <- edges_join2 %>%
-  #select('subzone_ori','subzone_dest') %>%
-  rename(from =subzone_ori) %>%
-  rename(to = subzone_dest) %>%
-  # Group by "from","to" and add the "DAY_TYPE" so we can choose in RShiny
-  group_by(from,to,DAY_TYPE) %>%
-  arrange(X1) %>%
-  # make weights to be according to "TOTAL_TRIPS"
-  summarise(weight = sum(TOTAL_TRIPS))%>%
-  filter(weight>1) %>%
-  ungroup() %>% 
-  drop_na() 
-
-
-#Make sure "weights" is called "value" to invoke weights on flow edges
-edges_inter <- edges_inter %>%
-  rename(value = weight)
-
-
-#Make sure 'weights' is called 'value' to invoke wights on nodes
-node_inter <- node_inter %>%
-  rename(value = weight) %>%
-  rename(group = district)
+# # VisNetwork Interactive Graphs
+# #To make my interactive graph have a dropdown menu, they always make us select by id, in my case of `node$id`, it does not show any relevant information. So we have to make tne `node$name` the column of id
+# # Edit Node data to make id = name
+# node_inter <- node %>% 
+#   select(-c("id")) %>%
+#   rename(id = name)
+# 
+# # make the `from` and `to` of edges link to the newly created `id` in `node_inter`
+# edges_inter <- edges_join2 %>%
+#   #select('subzone_ori','subzone_dest') %>%
+#   rename(from =subzone_ori) %>%
+#   rename(to = subzone_dest) %>%
+#   # Group by "from","to" and add the "DAY_TYPE" so we can choose in RShiny
+#   group_by(from,to,DAY_TYPE) %>%
+#   arrange(X1) %>%
+#   # make weights to be according to "TOTAL_TRIPS"
+#   summarise(weight = sum(TOTAL_TRIPS))%>%
+#   filter(weight>1) %>%
+#   ungroup() %>% 
+#   drop_na() 
+# 
+# 
+# #Make sure "weights" is called "value" to invoke weights on flow edges
+# edges_inter <- edges_inter %>%
+#   rename(value = weight)
+# 
+# 
+# #Make sure 'weights' is called 'value' to invoke wights on nodes
+# node_inter <- node_inter %>%
+#   rename(value = weight) %>%
+#   rename(group = district)
 
 
 
