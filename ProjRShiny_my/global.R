@@ -4,19 +4,16 @@
 library(shiny)
 library(tidyverse)
 library(shinydashboard)
-#library(dplyr)
 library(flows)
 library(sp)
 library(maptools)
 library(st)
 library(sf)
 library(leaflet)
-#library(ggplot2)
 library(reshape2)
 library(igraph)
 library(ggraph)
 library(tidygraph)
-#library(ggmap)
 library(tmap)
 library(flows)
 library(sp)
@@ -65,22 +62,22 @@ busstop_volume$BusStopCode <- as.character(busstop_volume$BusStopCode)
 # busstop information
 busstops <- read.csv("data/busstop_lonlat_subzone_District.csv")%>%
   dplyr::filter(planning_area != "Invalid")
-busstops$planning_area <- as.character(busstops$planning_area)
+busstops$BusStopCode <- as.integer(busstops$BusStopCode)
 busstops$BusStopCode <- as.character(busstops$BusStopCode)
+busstops$planning_area <- as.character(busstops$planning_area)
 busstops$planning_area[busstops$planning_area %in% c('Central Water Catchment', 'Mandai', 'Marina South', 'Museum', 'Newton', 'Orchard', 'Outram', 
                                                                            'Seletar', 'Rochor', 'Singapore River', 'Tanglin', 'Southern Islands', 'River Valley', 'Paya Lebar', 
                                                                            'Straits View', 'Tengah')] <- "Others"
 
 #bus route
 busroute <- read_csv('data/bus_route_overall.csv')
+busroute$BusStopCode <- as.integer(busroute$BusStopCode)
 busroute$BusStopCode <- as.character(busroute$BusStopCode)
 busroute <- busroute[c('BusStopCode', 'Direction', 'Distance', 'ServiceNo', 'StopSequence')]
 busroute <- busroute[busroute$BusStopCode %in% as.list(unique(busstops['BusStopCode']))[['BusStopCode']], ] 
 
 ## Origin Destination data
 data<- head(read.csv("data/origin_subset_10000.csv"),100)
-
-
 
 ##################################################### Jia Yi #########################################################
 
@@ -164,7 +161,8 @@ bus_graph <- tbl_graph(nodes = nodes_my, edges = busroute_busstop_aggregated, di
 
 
 #extract centrality
-bus_graph=bus_graph%>%mutate(betweenness_centrality = centrality_betweenness(normalized = TRUE)) %>%mutate(closeness_centrality = centrality_closeness(normalized = TRUE)) %>%mutate(degree_centrality=centrality_degree(mode='out',normalized = TRUE))%>%mutate(eigen_centrality=centrality_eigen(weights=bus_graph$Weight,directed=TRUE))
+bus_graph=bus_graph%>%mutate(betweenness_centrality = centrality_betweenness(normalized = TRUE)) %>%mutate(closeness_centrality = centrality_closeness(normalized = TRUE)) %>%
+  mutate(degree_centrality=centrality_degree(mode='out',normalized = TRUE))%>%mutate(eigen_centrality=centrality_eigen())
 
 #get edge table
 plot_vector2<- as.data.frame(cbind(V(bus_graph)$Longitude,V(bus_graph)$Latitude,V(bus_graph)$betweenness_centrality,V(bus_graph)$closeness_centrality,
@@ -205,4 +203,4 @@ map_table$degree.f <-round(range01(map_table$degree.f),3)
 #get the radius of the bubbles
 map_table$combined.f = (map_table$between.f*3+1)**(3/4) + (map_table$closeness.f*3+1)**(3/4) + (map_table$eigen.f*3+1)**(3/4) + (map_table$degree.f*3+1)**(3/4)
 
-#write.csv(map_table ,"map_table.csv", row.names = FALSE)
+write.csv(map_table ,"map_table.csv", row.names = FALSE)
