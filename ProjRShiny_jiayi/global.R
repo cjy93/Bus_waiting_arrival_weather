@@ -7,7 +7,9 @@ pacotes = c("shiny", "shinydashboard", "shinythemes", "plotly", "shinycssloaders
             'dplyr','ggplot2','reshape2','tidyverse','plotly','igraph','ggraph','tidygraph',
             'visNetwork', 'lubridate', 'ggmap','visNetwork', 
             'ggiraph', 'sf', 'tmap','rgdal',
-            'flows','sp','shinycssloaders')
+            'flows','sp','shinycssloaders','heatmaply',
+            'MASS','ERSA','car')
+            # 
 
 # Options for Spinner
 options(spinner.color="#0275D8", spinner.color.background="#ffffff", spinner.size=2)
@@ -21,6 +23,19 @@ package.check <- lapply(pacotes, FUN = function(x) {
 })
 
 ########################### Data Prep JY #############################
+# passenger volume per busstops
+passVol <- read_csv("data/passenger volume by busstop.csv") 
+passVol <- passVol %>% rename(BusStopCode = PT_CODE) %>%
+  group_by(BusStopCode) %>% summarise(frequencyIn = sum(TOTAL_TAP_IN_VOLUME),frequencyOut = sum(TOTAL_TAP_OUT_VOLUME))
+# centrality dataset
+central <- read_csv("data/centralityTable.csv")
+central$BusStopCode <- as.character(central$BusStopCode)
+pass_central <- inner_join(passVol, central, by = "BusStopCode") %>%
+  rename(closeness=closeness.f, between=between.f,eigen=eigen.f,degree=degree.f) 
+
+  
+
+
 # BusStops
 busstops <- read_csv('data/busstop_lonlat_subzone_District.csv') %>%
   mutate(subzone_name = toupper(subzone_name)) #capitalise the column in subzone
@@ -100,7 +115,7 @@ PA <- read_csv("data/PAData.csv") %>%
 #####################################################  Apps Jia Yi #########################################################
 ############################### Flow Map #####################################
 ## Create node
-busstops <- busstops %>% select(c('planning_area','subzone_name','BusStopCode','district'))
+busstops <- busstops %>% dplyr::select(c('planning_area','subzone_name','BusStopCode','district'))
 
 
 
@@ -127,9 +142,6 @@ map_gg4_SZ <- ggplot() + map_gg2_SZ + map_gg3_SZ +geom_point() +
 # prepared the file outside and call them in for app to run faster
 ########### this is still the subset file ##########################
 
-
-
-#node_SZ$id <- as.character(node_SZ$id)
 
 
 
