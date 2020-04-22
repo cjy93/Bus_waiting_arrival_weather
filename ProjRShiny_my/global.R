@@ -1,25 +1,58 @@
 ## Library packages 
 
+
+library(shiny)
+library(tidyverse)
+library(shinydashboard)
+#library(dplyr)
+library(flows)
+library(sp)
+library(maptools)
+library(st)
+library(sf)
+library(leaflet)
+#library(ggplot2)
+library(reshape2)
+library(igraph)
+library(ggraph)
+library(tidygraph)
+#library(ggmap)
+library(tmap)
+library(flows)
+library(sp)
+
+
 # Used packages
-pacotes = c("shiny", "shinydashboard", "shinythemes", "plotly", "shinycssloaders","tidyverse",
-            "scales", "knitr", "kableExtra", "ggfortify","dplyr","plotly","FNN",'flows','sp',
-            'tidyverse','st','sf','maptools','networkD3','gganimate','leaflet','RColorBrewer',
-            'dplyr','ggplot2','reshape2','tidyverse','plotly','igraph','ggraph','tidygraph',
-            'visNetwork', 'lubridate', 'ggmap','visNetwork', 
-            'ggiraph', 'sf', 'tmap',
-            'flows','sp'
-            # added in by mengyong
-            ,'leaflet.extras', 'geosphere', 'RColorBrewer'
-            
-            )
+#pacotes = c("shiny", "tidyverse", "shinydashboard",
+#            "dplyr",'flows','sp','maptools',
+#            'tidyverse','st','sf','leaflet',
+#            'dplyr','ggplot2','reshape2','tidyverse', 'igraph','ggraph','tidygraph',
+#            'ggmap', 'tmap',
+#            'flows','sp'
+#)
+
+## removed packages
+# "shinythemes", "plotly", "shinycssloaders", 
+#"scales", "knitr", "kableExtra", "ggfortify",
+#,'networkD3','gganimate',
+#'RColorBrewer',
+#'plotly',
+#'visNetwork', 'lubridate', 
+#'visNetwork', 
+#'ggiraph',
+#'#, 'geosphere'
+#'#   ,'leaflet.extras'
+#'#,"plotly","FNN"
+
+
 
 # Run the following command to verify that the required packages are installed. If some package
 # is missing, it will be installed automatically
-package.check <- lapply(pacotes, FUN = function(x) {
-  if (!require(x, character.only = TRUE)) {
-    install.packages(x, dependencies = TRUE)
-  }
-})
+#package.check <- lapply(pacotes, FUN = function(x) {
+#  if (!require(x, character.only = TRUE)) {
+#    install.packages(x, dependencies = TRUE)
+#  }
+#})
 
 ##################################################### Import data here #########################################################
 
@@ -31,7 +64,7 @@ busstop_volume$BusStopCode <- as.character(busstop_volume$BusStopCode)
 
 # busstop information
 busstops <- read.csv("data/busstop_lonlat_subzone_District.csv")%>%
-  filter(planning_area != "Invalid")
+  dplyr::filter(planning_area != "Invalid")
 busstops$planning_area <- as.character(busstops$planning_area)
 busstops$BusStopCode <- as.character(busstops$BusStopCode)
 busstops$planning_area[busstops$planning_area %in% c('Central Water Catchment', 'Mandai', 'Marina South', 'Museum', 'Newton', 'Orchard', 'Outram', 
@@ -46,6 +79,8 @@ busroute <- busroute[busroute$BusStopCode %in% as.list(unique(busstops['BusStopC
 
 ## Origin Destination data
 data<- head(read.csv("data/origin_subset_10000.csv"),100)
+
+
 
 ##################################################### Jia Yi #########################################################
 
@@ -72,8 +107,8 @@ mystats_jy <- str(mystats)
 sumflow_jy <- mystats$sumflows
 
 # Plot Flows diagram
-mpsz <- readShapeSpatial("data/geospatial/MP14_SUBZONE_WEB_PL.shp") # plot singapore shape
-mpbus <- readShapeSpatial("data/BusStopLocation_Jan2020/BusStop.shp") # plot busstop
+#mpsz <- readShapeSpatial("data/geospatial/MP14_SUBZONE_WEB_PL.shp") # plot singapore shape
+#mpbus <- readShapeSpatial("data/BusStopLocation_Jan2020/BusStop.shp") # plot busstop
 
 ##################################################### Mengyong Proportionate symbol map#########################################################
 
@@ -88,7 +123,7 @@ location_my <- location_my[c('planning_area', 'subzone_name', 'DAY_TYPE', 'TIME_
   rename(c(Day = DAY_TYPE, TapIns = TOTAL_TAP_IN_VOLUME, TapOuts = TOTAL_TAP_OUT_VOLUME, Time = TIME_PER_HOUR, PlanningArea = planning_area)) 
 
 planning_area_list_my <-sort(unique(location_my$PlanningArea))
-pal <- colorFactor(palette = 'Set3', domain = planning_area_list_my)
+#pal <- colorFactor(palette = 'Set3', domain = planning_area_list_my)
 
 
 ##################################################### Mengyong Centrality#########################################################
@@ -111,8 +146,8 @@ busroute_busstop_aggregated <- busroute_busstop %>%
   #group_by(from, to, planning_area) %>%
   group_by(from, to) %>%
   summarise(Weight = n()) %>%
-  filter(from!=to) %>%
-  filter(Weight > 0) %>%
+  dplyr::filter(from!=to) %>%
+  dplyr::filter(Weight > 0) %>%
   ungroup()
 busroute_busstop_aggregated$from <- as.character(busroute_busstop_aggregated$from)
 busroute_busstop_aggregated$to <- as.character(busroute_busstop_aggregated$to)
@@ -170,3 +205,4 @@ map_table$degree.f <-round(range01(map_table$degree.f),3)
 #get the radius of the bubbles
 map_table$combined.f = (map_table$between.f*3+1)**(3/4) + (map_table$closeness.f*3+1)**(3/4) + (map_table$eigen.f*3+1)**(3/4) + (map_table$degree.f*3+1)**(3/4)
 
+#write.csv(map_table ,"map_table.csv", row.names = FALSE)

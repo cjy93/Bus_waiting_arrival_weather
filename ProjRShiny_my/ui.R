@@ -36,7 +36,7 @@ ui <- dashboardPage(
                                      of organizing our bus services, which include bus stops, bus routes, and connectivity within region and from regions to regions."),
                                   h2("Main Packages Used"),
                                   p("Shiny is available on CRAN, so you can install it in the usual way from your R console:"),
-                                  code('install.packages("shiny")'),
+                                  code('install.packages(shiny)'),
                                   br(),
                                   code('install.packages(dplyr)'),
                                   br(),

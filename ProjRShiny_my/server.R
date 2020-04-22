@@ -60,7 +60,6 @@ server <- function(input, output) {
       }
     })
     
-
     output$map_my <- renderLeaflet({
         map_data <- location_my_map()
         map_data %>% leaflet()%>%
@@ -100,42 +99,50 @@ server <- function(input, output) {
     my_map_centrality_node <- reactive({
       if (input$radio_my2 == 'PA' & input$radio_my3 == 'between_my_filter') {
         map_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
-          dplyr::filter(between.f >= input$centrality_filter[1] & between.f <= input$centrality_filter[2])
+          dplyr::filter(between.f >= input$centrality_filter[1] & between.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = between.f)
       }
       
       else if (input$radio_my2 == 'PA' & input$radio_my3 == 'closeness_my_filter') {
         map_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
-          dplyr::filter(closeness.f >= input$centrality_filter[1] & closeness.f <= input$centrality_filter[2])        
+          dplyr::filter(closeness.f >= input$centrality_filter[1] & closeness.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = closeness.f)     
       }
 
       else if (input$radio_my2 == 'PA' & input$radio_my3 == 'degree_my_filter') {
         map_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
-          dplyr::filter(degree.f >= input$centrality_filter[1] & degree.f <= input$centrality_filter[2])
+          dplyr::filter(degree.f >= input$centrality_filter[1] & degree.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = degree.f)
       }
       
       else if (input$radio_my2 == 'PA' & input$radio_my3 == 'eigen_my_filter') {
         map_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
-          dplyr::filter(eigen.f >= input$centrality_filter[1] & eigen.f <= input$centrality_filter[2])
+          dplyr::filter(eigen.f >= input$centrality_filter[1] & eigen.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = eigen.f)
       }
       
       else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'between_my_filter') {
         map_table %>% dplyr::filter(subzone_name == input$sz_my_2)%>%
-          dplyr::filter(between.f >= input$centrality_filter[1] & between.f <= input$centrality_filter[2])
+          dplyr::filter(between.f >= input$centrality_filter[1] & between.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = between.f)
       }
       
       else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'closeness_my_filter') {
         map_table %>% dplyr::filter(subzone_name == input$sz_my_2)%>%
-          dplyr::filter(closeness.f >= input$centrality_filter[1] & closeness.f <= input$centrality_filter[2])        
+          dplyr::filter(closeness.f >= input$centrality_filter[1] & closeness.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = closeness.f)      
       }
       
       else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'degree_my_filter') {
         map_table %>% dplyr::filter(subzone_name == input$sz_my_2)%>%
-          dplyr::filter(degree.f >= input$centrality_filter[1] & degree.f <= input$centrality_filter[2])
+          dplyr::filter(degree.f >= input$centrality_filter[1] & degree.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = degree.f)
       }
       
       else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'eigen_my_filter') {
         map_table %>% dplyr::filter(subzone_name == input$sz_my_2)%>%
-          dplyr::filter(eigen.f >= input$centrality_filter[1] & eigen.f <= input$centrality_filter[2])
+          dplyr::filter(eigen.f >= input$centrality_filter[1] & eigen.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = eigen.f)
       }
     })
     
@@ -182,10 +189,11 @@ server <- function(input, output) {
     })
   
     
+    
     output$map_my_centrality <- renderLeaflet({
       map_nodes <- my_map_centrality_node()
       map_edges <- my_map_centrality_edge()
-      
+    
      map3 <- map_nodes %>% leaflet()%>%
         addProviderTiles("CartoDB") %>% 
         setMaxBounds(lng1 = 103.801959 + .25, 
@@ -196,7 +204,7 @@ server <- function(input, output) {
     for(i in 1:nrow(map_edges)){
       map3 <- addPolylines(map3, lat = as.numeric(map_edges[i, c('lat.f', 'lat.t')]), 
                            lng = as.numeric(map_edges[i, c('long.f', 'long.t')]),
-                           #weight = 0.5,
+                           weight = 0.75,
                            color = 'red'
       )
     }
@@ -204,7 +212,7 @@ server <- function(input, output) {
     for(i in 1:nrow(map_nodes)){
       map3<-addCircleMarkers(map3, lat = as.numeric(map_nodes[i, 'lat.f']), 
                              lng = as.numeric(map_nodes[i,'long.f']),
-                             radius =(as.numeric(map_nodes[i, 'combined.f'])*2),
+                             radius =(as.numeric(map_nodes[i, 'combined.f'])*0.7*40),
                              color='blue',
                              fillOpacity = 0.75,
                              label = map_nodes[i,'id.Description'],
@@ -217,7 +225,6 @@ server <- function(input, output) {
     
     output$tbl_my_2 <- DT::renderDT({
       DT::datatable(
-        #my_map_centrality_node()
         my_map_centrality_node()[c('planning_area', 'BusStopCode', 'RoadName', 'Description', 'between.f', 'closeness.f', 'eigen.f', 'degree.f')]%>%
           rename(c(PlanningArea = planning_area, BetweennessCentrality = between.f, ClosenessCentrality = closeness.f, EigenvalueCentrality= eigen.f, DegreeCentrality = degree.f)),
         extensions = "Scroller",

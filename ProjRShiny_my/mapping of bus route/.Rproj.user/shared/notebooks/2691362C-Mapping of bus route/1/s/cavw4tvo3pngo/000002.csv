@@ -1,4 +1,0 @@
-"0","bus_graph <- tbl_graph(nodes = total, edges = busroute_busstop_aggregated, directed = TRUE)"
-"2","Error in add_vertices(gr, nrow(nodes) - gorder(gr)) : 
-  At type_indexededgelist.c:369 : cannot add negative number of vertices, Invalid value
-"

@@ -1,0 +1,8 @@
+"0","busroute_2 <- busroute"
+"0",""
+"0","busroute_2['StopSequence'] = busroute_2['StopSequence']-1"
+"0","busroute_2['BusStopCode_dest'] = busroute_2['BusStopCode']"
+"0","busroute_2 <- busroute_2[c('BusStopCode_dest', 'Direction', 'ServiceNo', 'StopSequence')]"
+"0",""
+"0","busstops_from_to <- dplyr::inner_join(busroute, busroute_2, by =c('StopSequence', 'ServiceNo', 'Direction'))"
+"0","busstops_from_to"

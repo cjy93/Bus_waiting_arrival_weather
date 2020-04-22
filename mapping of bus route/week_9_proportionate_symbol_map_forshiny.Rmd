@@ -1,0 +1,171 @@
+---
+title: "Re-imagining Bus Transport Network in Singapore"
+author: "Mengyong Lee"
+date: "2020-03-17 (last updated: `r Sys.Date()`)"
+  
+output:
+  html_document:
+    toc: true
+    toc_float:
+        collapsed: true
+        smooth_scroll: true
+    toc_depth: 3
+    fig_caption: yes
+    code_folding: show
+    number_sections: true
+---
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 12px;
+      font-family: "Times New Roman", Times, serif;
+  }
+td {  /* Table  */
+  font-size: 8px;
+  font-family: "Times New Roman", Times, serif;
+}
+h1.title {
+  font-size: 24x;
+  font-family: "Times New Roman", Times, serif;
+  font-weight:bold;
+}
+h1 { /* Header 1 */
+  font-size: 20px;
+  font-family: "Times New Roman", Times, serif;
+  font-weight:bold;
+}
+h2 { /* Header 2 */
+    font-size: 16px;
+    font-family: "Times New Roman", Times, serif;
+    font-weight:bold;
+
+}
+h3 { /* Header 3 */
+  font-size: 14px;
+  font-family: "Times New Roman", Times, serif;
+  font-weight:bold;
+}
+code.r{ /* Code block */
+    font-size: 12px;
+    font-family: "Times New Roman", Times, serif;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 12px;
+    font-family: "Times New Roman", Times, serif;
+}
+</style>
+
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+packages <- c('tidyverse', 'leaflet', 'sf', 'RColorBrewer', 'leaflet.extras', 'geosphere')
+
+for (p in packages){
+  if (!require(p,character.only = T)){
+    install.packages(p)
+  }
+  library(p,character.only = T)
+}
+```
+
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+busstop_volume <- read.csv("data/passenger volume by busstop.csv")
+colnames(busstop_volume)[5] = "BusStopCode"
+
+head(busstop_volume)
+```
+
+### Busstop Volume
+In addition, we import busstop information information. This dataset includes latitude and longitude. 
+This dataset is extracted by parsing busstop information from LTA Datamall to [Onemap.sg](https://docs.onemap.sg/) in order to extract the planning_area data. As there are too many factors to planning_area, we mapped some of the smallers area to `Others` to reduce categorical features. 
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+busstop_information <- read.csv("data/busstop_lonlat_subzone.csv")
+
+busstop_information$planning_area = str_to_title(busstop_information$planning_area)
+busstop_information <- filter(busstop_information, planning_area != "Invalid")
+
+busstop_information$planning_area <- as.character(busstop_information$planning_area)
+busstop_information$planning_area[busstop_information$planning_area %in% c('Central Water Catchment', 'Mandai', 'Marina South', 'Museum', 'Newton', 'Orchard', 'Outram', 'Seletar', 'Rochor', 'Singapore River', 'Tanglin', 'Southern Islands', 'River Valley', 'Paya Lebar', 'Straits View', 'Tengah')] <- "Others"
+
+head(busstop_information)
+```
+
+## Data Processing
+### Insert Latitude and Longitude
+Now we have latitude and longitude in the ```busstop_information```, we join it to ```busstop_volume``` dataset through 'BusStopCode`. We also remove busstop_volume from memory to free the memory. 
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+busstop_volume_lat_long <- dplyr::inner_join(busstop_volume, busstop_information, by ='BusStopCode')
+str(busstop_volume_lat_long)
+
+rm(busstop_volume)
+
+```
+  
+## Visualization 1-a: Proportional Symbol Map by Planning Area
+In order to reduce dimensions, we filtered the ```busstop_volume_lat_long``` data, setting ```TIME_PER_HOUR``` to 10 and ```DAY_TYPE``` to Weekday. We also created ```tap_in_out_radius``` to set the size of the bubble in the map. 
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+location <- busstop_volume_lat_long %>%
+  dplyr::filter(DAY_TYPE == c('WEEKDAY'))%>%
+  dplyr::filter(TIME_PER_HOUR == 10)%>%
+  dplyr::group_by(BusStopCode)%>%
+  dplyr::arrange(desc(BusStopCode))%>%
+  rename(c(lat = Latitude, lon = Longitude))
+
+#location$tap_in_radius <- sqrt(location$TOTAL_TAP_IN_VOLUME)/6
+#location$tap_out_radius <- sqrt(location$TOTAL_TAP_OUT_VOLUME)/6
+location$tap_in_out_radius <- (location$TOTAL_TAP_IN_VOLUME + location$TOTAL_TAP_OUT_VOLUME)**(1/2)/6
+
+#location <- head(location)
+head(location)
+```
+### Creating dataframes for each planning region
+As we want this map to be filterable, we need to create many mini datasets, one for each region. To do this, we create a list called ```planning_area_list``` which contains a list of unique planning_area. After which, we do a loop over this list, with each iteration filtering the main dataset by the region, and saving it in a seperate dataset. 
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+planning_area_list <-sort(unique(location$planning_area))
+
+for (i in planning_area_list)
+{
+  df <- filter(location, planning_area == i)  
+  assign(paste(i), df)
+}
+
+```
+
+### Plotting the map
+This map is made such that it is filterable. Some features I added includes:
+
+* Filters - Reader can choose which planning area he/she wants to explore
+* Colour - Using colorbrewer palette ```Set3```
+* Bounds - Readers will not be able to scroll out of Singapore
+
+```{r, echo = TRUE, eval = TRUE, message = TRUE, warning = FALSE}
+#pal <- colorNumeric(palette = "Reds", domain = c(0:11), reverse = FALSE)
+pal <- colorFactor(palette = 'Set3', domain = planning_area_list)
+
+map <-
+  leaflet(width = 800, height = 600)%>%
+  addProviderTiles("CartoDB", group = "CartoDB") %>% 
+  addCircleMarkers(data=`Ang Mo Kio`, group = 'Ang Mo Kio', stroke = FALSE, fillOpacity = 0.75,
+                   lng = ~lon, lat = ~lat, radius = ~tap_in_out_radius, color =  ~pal(planning_area),  
+                   popup = ~paste0('Tap in Volume: ', TOTAL_TAP_IN_VOLUME, "<br/>", 'Tap out volume: ', TOTAL_TAP_OUT_VOLUME))%>%
+  setView(lat = 1.3004641, lng = 104.4496028, zoom = 11)%>%
+  setMaxBounds(lng1 = 103.801959 + .25, 
+             lat1 = 1.32270 + .25, 
+             lng2 = 103.801959 - .25, 
+             lat2 = 1.32270 - .25)%>%
+  addLayersControl(baseGroups =unique(planning_area_list))
+
+map
+
+```
+
+```{r}
+
+
+
+
+```

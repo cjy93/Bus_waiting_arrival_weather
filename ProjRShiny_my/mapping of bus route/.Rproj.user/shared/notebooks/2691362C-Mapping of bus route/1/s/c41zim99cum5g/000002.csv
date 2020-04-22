@@ -1,3 +1,0 @@
-"0","bus_graph=bus_graph%>%mutate(betweenness_centrality = centrality_betweenness(normalized = T)) %>%mutate(closeness_centrality = centrality_closeness(normalized = T))%>%mutate(centrality_degree=centrality_degree(mode='out',normalized = T))"
-"2","Error: This call requires nodes to be active
-"

@@ -1,0 +1,198 @@
+---
+title: "Planning area"
+author: "Yongshan"
+date: "4/9/2020"
+output: html_document
+---
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+packages = c('igraph', 'tidygraph', 'ggraph', 'visNetwork', 'lubridate', 'tidyverse', 'ggplot2', 'ggmap', 'leaflet', 'ggiraph', 'sf','sp','st', 'tmap', 'ggplot2','maptools')
+
+for(p in packages){library
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+```
+
+```{r eval=FALSE}
+#this is to downgrade to an older version.
+# if got problem need to uninstall the package, exit from r studio otherwise it would not refresh from rstudio properly
+require(devtools)
+install_version("tidygraph", version = "1.0.0", repos = "http://cran.us.r-project.org")
+```
+
+```{r eval=FALSE}
+#this is to downgrade to an older version.
+# if got problem need to uninstall the package, exit from r studio otherwise it would not refresh from rstudio properly
+require(devtools)
+install_version("ggraph", version = "1.0.0", repos = "http://cran.us.r-project.org")
+```
+
+
+
+```{r}
+#the following code only loads the package, this does not install the package. if it says true, it means it is already launched
+p <- c('igraph', 'tidygraph', 'ggraph', 'visNetwork', 'lubridate', 'tidyverse','ggmap','ggiraph','leaflet','ggplot2','sp','st','sf','maptools')
+lapply(p, require, character.only = TRUE)
+```
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+
+###top_bus <- c('51','61','961','66','67','14','30','143','10','147','178','197','154','167','166','174','196','171','2','12','21','170','970','13')
+
+PA <- read_csv('data/planning_area_lat_long.csv')
+
+busroute <- read_csv('data/bus_route_overall.csv')
+busroute$BusStopCode <- as.character(busroute$BusStopCode)
+busroute <- busroute[c('BusStopCode', 'Direction', 'Distance', 'ServiceNo', 'StopSequence')] #%>%
+            #dplyr::filter(ServiceNo %in% top_bus)
+busroute
+
+
+busstops <- read_csv('data/busstops_with_planning_area_XY.csv')
+busstops$BusStopCode <- as.character(busstops$BusStopCode)
+busstops <- busstops[c('BusStopCode', 'Description', 'RoadName', 'planning_area', 'Latitude', 'Longitude')] 
+#busstops <- busstops[busstops$BusStopCode %in% as.list(unique(busroute['BusStopCode']))[['BusStopCode']], ] 
+
+busstops
+```
+
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+busroute_2 <- busroute
+
+busroute_2['StopSequence'] = busroute_2['StopSequence']-1
+busroute_2['BusStopCode_dest'] = busroute_2['BusStopCode']
+busroute_2 <- busroute_2[c('BusStopCode_dest', 'Direction', 'ServiceNo', 'StopSequence')]
+
+busstops_from_to <- dplyr::inner_join(busroute, busroute_2, by =c('StopSequence', 'ServiceNo', 'Direction'))
+busstops_from_to
+
+```
+
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+#join the two tables together
+
+busroute_busstop <- dplyr::inner_join(busstops_from_to, busstops, by ='BusStopCode')
+keeps <- c('BusStopCode_dest','BusStopCode', 'Direction', 'Distance', 'ServiceNo', 'Latitude', 'Longitude', 'planning_area', 'Description')
+busroute_busstop <- busroute_busstop[, keeps, drop = FALSE]  %>% rename(description_from = Description)%>% rename(from = BusStopCode)%>% rename(BusStopCode = BusStopCode_dest)
+
+edge_from_to <- dplyr::inner_join(busroute_busstop, busstops, by ='BusStopCode')
+keeps <- c('from','BusStopCode', 'Direction', 'Distance', 'ServiceNo', 'Latitude.x', 'Longitude.x', 'planning_area.x','planning_area.y','Latitude.y','Longitude.y', 'description_from','Description')
+edge_from_to <- edge_from_to[, keeps, drop = FALSE] %>% 
+rename(to = BusStopCode) %>% rename(description_to = Description) %>% rename(Longitude = Longitude.x)%>% rename(Latitude = Latitude.x)%>% rename(planning_area = planning_area.x)
+
+
+head(edge_from_to)
+```
+
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+busroute_busstop_PA_aggregated <-  edge_from_to%>%
+  group_by(planning_area,planning_area.y) %>%
+    summarise(Weight = n()) %>%
+  filter(planning_area!=planning_area.y) %>%
+  filter(planning_area !='invalid') %>%
+  filter(planning_area.y !='invalid')
+
+
+#busroute_busstop_aggregated$from <- as.character(busroute_busstop_aggregated$from)
+#busroute_busstop_aggregated$to <- as.character(busroute_busstop_aggregated$to)
+
+busroute_busstop_PA_aggregatedXY <- dplyr::inner_join(busroute_busstop_PA_aggregated, PA, by ='planning_area')
+keeps <- c('planning_area.y','planning_area', 'Weight', 'Latitude', 'Longitude')
+busroute_busstop_PA_aggregatedXY <- busroute_busstop_PA_aggregatedXY[, keeps, drop = FALSE]  %>% rename(from = planning_area)%>% rename(edges = Weight)%>% rename(planning_area = planning_area.y)%>% rename(Longitudef = Longitude)%>% rename(Latitudef = Latitude)
+
+busroute_busstop_PA_aggregatedXY <- dplyr::inner_join(busroute_busstop_PA_aggregatedXY, PA, by ='planning_area')
+keeps <- c('from','planning_area', 'edges', 'Latitudef', 'Longitudef','Latitude', 'Longitude')
+busroute_busstop_PA_aggregatedXY <- busroute_busstop_PA_aggregatedXY[, keeps, drop = FALSE]  %>% rename(to = planning_area)%>% rename(Longitudet = Longitude)%>% rename(Latitudet = Latitude)
+
+busroute_busstop_PA_aggregatedXY
+```
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+#busstops_nodes_a <- unique(busroute_busstop_aggregated[c('target', 'planning_area')]) %>%
+#      rename(Id = target)
+
+#busstops_nodes_b <- unique(busroute_busstop_aggregated[c('source', 'planning_area')]) %>%
+#      rename(Id = source)
+
+#total <- unique(rbind(busstops_nodes_a, busstops_nodes_b))
+
+#busstops <-busstops%>% rename(Latitudebs = Latitude)%>%rename(Longitudebs = Longitude)
+busstopsPA <- dplyr::inner_join(busstops, PA, by ='planning_area')
+keeps <- c('planning_area','Latitude.x', 'Longitude.x')
+busstopsPA <- busstopsPA[, keeps, drop = FALSE] %>%group_by(planning_area,Latitude.x,Longitude.x) %>%summarise(PAbusstopcount = n()) %>% rename(c(Latitude
+ = Latitude.x, Longitude = Longitude.x))
+
+busstopsPA
+
+```
+
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+bus_graph <- tbl_graph(nodes = busstopsPA, edges = busroute_busstop_PA_aggregatedXY, directed = TRUE)
+#%>%
+#          activate(edges) %>%
+#          arrange(desc(Weight))
+#%>%
+ #         filter(id %in% union(.E()$to, .E()$from))
+bus_graph
+```
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+
+bus_graph=bus_graph%>%mutate(betweenness_centrality = centrality_betweenness(normalized = T)) %>%mutate(closeness_centrality = centrality_closeness(normalized = T))%>%mutate(degree_centrality=centrality_degree(mode='all',normalized = T))%>%mutate(degreein_centrality=centrality_degree(mode='in',normalized = T))%>%mutate(degreeout_centrality=centrality_degree(mode='out',normalized = T))
+
+bus_graph
+
+```
+
+```{r, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
+register_google(key = "AIzaSyAVz4L7AGlC88pfMCHpxgKNH9hle3gxW9o")
+```
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+#register_google(key = ) #create your own key
+
+map <- get_map(location = c(lon = 103.8279248, lat = 1.3438295), zoom=11, source = "google", maptype = 'roadmap')
+
+p <- ggmap(map) 
+p
+```
+
+```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+
+G=bus_graph
+
+#Normally we need to create two vectors in order to plot both the network data and the coordinates on a map
+#plot_vector takes the longitude and latitude to be plotted on a map.
+#plot_vector1 takes the lon, lat and the network centrality values.
+plot_vector<- as.data.frame(cbind(V(G)$Longitude,V(G)$Latitude))
+plot_vector1<- as.data.frame(cbind(V(G)$Longitude,V(G)$Latitude,V(G)$betweenness_centrality,V(G)$closeness_centrality,V(G)$edges))
+
+#we are taking the edgelist which is being used to get the origin and destination of the airport data.
+#edgelist[,1]- takes the origin values and the edgelist[,2] takes the destination values.
+edgelist <- get.edgelist(G)
+edgelist[,1]<-as.numeric(match(edgelist[,1],V(G)))
+edgelist[,2]<-as.numeric(match(edgelist[,2],V(G)))
+
+#the edges now consists of the edge between the origin and the destination values
+edges <- data.frame(plot_vector[edgelist[,1],], plot_vector[edgelist[,2],])
+
+#naming the coloumns obtained to plot
+colnames(edges) <- c("X1","Y1","X2","Y2")
+
+#Here we are taking ggmap as our base layer. on top of ggmap we are plotting the origin and destination coordinates using the plot_vector as our 2nd layer, then we are plotting the coordinates of all the centrality from the plot_vector1 as our 3rd layer and then we are ploting the geom_segment i.e. the edges as our 4th layer.
+```
+
+``` {r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE, fig.width=25, fig.height=25}
+z=p + 
+  geom_segment(aes(x=X1, y=Y1, xend = X2, yend = Y2), color='red',data=edges,arrow = arrow(type = "closed", length = unit(.13, "inches"))) +
+  geom_point(aes(V1, V2), data=plot_vector1)+ 
+  geom_point(aes(x=plot_vector1$V1,y=plot_vector1$V2,size=plot_vector1$V3,colour=plot_vector1$V4),plot_vector1)+ 
+  scale_colour_gradientn(colours=rainbow(5))+scale_size_continuous(range = c(1, 10))
+z
+```

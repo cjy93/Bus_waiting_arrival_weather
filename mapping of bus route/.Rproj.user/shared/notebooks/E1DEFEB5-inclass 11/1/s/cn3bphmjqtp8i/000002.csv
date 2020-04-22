@@ -1,0 +1,73 @@
+"0","GAStech_graph <- tbl_graph(nodes = GAStech_nodes, edges = GAStech_edges_aggregated, directed = TRUE)"
+"0","GAStech_graph"
+"1","# A tbl_graph: "
+"1",""
+"1","54"
+"1",""
+"1"," nodes and "
+"1",""
+"1","1456"
+"1",""
+"1"," edges
+"
+"1","#
+"
+"1","# "
+"1",""
+"1","A directed multigraph with 1 component"
+"1",""
+"1","
+"
+"1","#
+"
+"1","[38;5;246m# Node Data: 54 x 4 (active)[39m
+"
+"1",""
+"1","     id label               Department     Title                                 
+"
+"1",""
+"1","  [3m[38;5;246m<dbl>[39m[23m [3m[38;5;246m<chr>[39m[23m               [3m[38;5;246m<chr>[39m[23m          [3m[38;5;246m<chr>[39m[23m                                 
+"
+"1",""
+"1","[38;5;250m1[39m     1 Mat.Bramar          Administration Assistant to CEO                      
+"
+"1",""
+"1","[38;5;250m2[39m     2 Anda.Ribera         Administration Assistant to CFO                      
+"
+"1",""
+"1","[38;5;250m3[39m     3 Rachel.Pantanal     Administration Assistant to CIO                      
+"
+"1",""
+"1","[38;5;250m4[39m     4 Linda.Lagos         Administration Assistant to COO                      
+"
+"1",""
+"1","[38;5;250m5[39m     5 Ruscella.Mies.Haber Administration Assistant to Engineering Group Manager
+"
+"1",""
+"1","[38;5;250m6[39m     6 Carla.Forluniau     Administration Assistant to IT Group Manager         
+"
+"1",""
+"1","[38;5;246m# ... with 48 more rows[39m
+"
+"1","#
+"
+"1","[38;5;246m# Edge Data: 1,456 x 4[39m
+"
+"1",""
+"1","   from    to Weekday   Weight
+"
+"1",""
+"1","  [3m[38;5;246m<int>[39m[23m [3m[38;5;246m<int>[39m[23m [3m[38;5;246m<ord>[39m[23m      [3m[38;5;246m<int>[39m[23m
+"
+"1",""
+"1","[38;5;250m1[39m     1     2 Monday         4
+"
+"1",""
+"1","[38;5;250m2[39m     1     2 Tuesday        3
+"
+"1",""
+"1","[38;5;250m3[39m     1     2 Wednesday      5
+"
+"1",""
+"1","[38;5;246m# ... with 1,453 more rows[39m
+"

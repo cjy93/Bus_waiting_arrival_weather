@@ -1,0 +1,8 @@
+"0",""
+"0",""
+"0","busstops <- read_csv('data/busstops_with_planning_area_XY.csv')"
+"0","busstops$BusStopCode <- as.character(busstops$BusStopCode)"
+"0","busstops <- busstops[c('BusStopCode', 'Description', 'RoadName', 'planning_area', 'Latitude', 'Longitude')] "
+"0","busstops <- busstops[busstops$BusStopCode %in% as.list(unique(busroute['BusStopCode']))[['BusStopCode']], ] "
+"0",""
+"0","busstops"
