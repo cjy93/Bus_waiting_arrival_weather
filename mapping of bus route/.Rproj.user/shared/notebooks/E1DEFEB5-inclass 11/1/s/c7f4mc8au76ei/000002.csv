@@ -1,0 +1,8 @@
+"0","GAStech_edges_aggregated <- GAStech_edges %>%"
+"0","  filter(MainSubject == ""Work related"") %>%"
+"0","  group_by(source, target, Weekday) %>%"
+"0","    summarise(Weight = n()) %>%"
+"0","  filter(source!=target) %>%"
+"0","  filter(Weight > 1) %>%"
+"0","  ungroup()"
+"0","GAStech_edges_aggregated"

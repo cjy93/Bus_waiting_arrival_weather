@@ -1,0 +1,74 @@
+"0","bus_graph %>%"
+"0","  activate(edges) %>%"
+"0","  arrange(desc(Weight))"
+"1","# A tbl_graph: "
+"1",""
+"1","1382"
+"1",""
+"1"," nodes and "
+"1",""
+"1","732"
+"1",""
+"1"," edges
+"
+"1","#
+"
+"1","# "
+"1",""
+"1","A directed acyclic simple graph with 655 components"
+"1",""
+"1","
+"
+"1","#
+"
+"1","[38;5;246m# Edge Data: 732 x 4 (active)[39m
+"
+"1",""
+"1","   from    to planning_area Weight
+"
+"1",""
+"1","  [3m[38;5;246m<int>[39m[23m [3m[38;5;246m<int>[39m[23m [3m[38;5;246m<chr>[39m[23m          [3m[38;5;246m<int>[39m[23m
+"
+"1",""
+"1","[38;5;250m1[39m    12     3 BUKIT MERAH       11
+"
+"1",""
+"1","[38;5;250m2[39m   322   326 BUKIT TIMAH        8
+"
+"1",""
+"1","[38;5;250m3[39m   326   328 BUKIT TIMAH        8
+"
+"1",""
+"1","[38;5;250m4[39m   328   330 BUKIT TIMAH        8
+"
+"1",""
+"1","[38;5;250m5[39m   331   329 BUKIT TIMAH        8
+"
+"1",""
+"1","[38;5;250m6[39m   330   332 BUKIT TIMAH        8
+"
+"1",""
+"1","[38;5;246m# ... with 726 more rows[39m
+"
+"1","#
+"
+"1","[38;5;246m# Node Data: 1,382 x 9[39m
+"
+"1",""
+"1","  Id    Description  RoadName   planning_area Latitude Longitude betweenness_cent~ closeness_centr~ centrality_degr~
+"
+"1",""
+"1","  [3m[38;5;246m<chr>[39m[23m [3m[38;5;246m<chr>[39m[23m        [3m[38;5;246m<chr>[39m[23m      [3m[38;5;246m<chr>[39m[23m            [3m[38;5;246m<dbl>[39m[23m     [3m[38;5;246m<dbl>[39m[23m             [3m[38;5;246m<dbl>[39m[23m            [3m[38;5;246m<dbl>[39m[23m            [3m[38;5;246m<dbl>[39m[23m
+"
+"1",""
+"1","[38;5;250m1[39m 10009 Bt Merah Int Bt Merah ~ BUKIT MERAH       1.28      104.          0                0.000[4m7[24m[4m8[24m[4m0[24m         0.000[4m7[24m[4m2[24m[4m4[24m
+"
+"1",""
+"1","[38;5;250m2[39m 10011 BEF NEIL RD  New Bridg~ BUKIT MERAH       1.28      104.          0.000[4m1[24m[4m0[24m[4m5[24m         0.000[4m7[24m[4m7[24m[4m9[24m         0.002[4m1[24m[4m7[24m 
+"
+"1",""
+"1","[38;5;250m3[39m 10017 Aft Hosp Dr  Eu Tong S~ BUKIT MERAH       1.28      104.          0.000[4m2[24m[4m1[24m[4m0[24m         0.000[4m7[24m[4m2[24m[4m6[24m         0.002[4m1[24m[4m7[24m 
+"
+"1",""
+"1","[38;5;246m# ... with 1,379 more rows[39m
+"

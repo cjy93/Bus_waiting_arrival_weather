@@ -46,36 +46,43 @@ server <- function(input, output) {
     
     ## Mengyong Plot Proportionate Symbol Map
     
-    
     location_my_map <- reactive({
-        location_my %>% dplyr::filter(planning_area == input$planning_region_my)%>% 
-            dplyr::filter(TIME_PER_HOUR == input$time_my)%>%
-            dplyr::filter(DAY_TYPE == input$week_my)
+      if (input$radio_my1 == 'PA') {
+      location_my %>% dplyr::filter(PlanningArea == input$pa_my_1)%>% 
+            dplyr::filter(Time == input$time_my)%>%
+            dplyr::filter(Day == input$week_my)
+      }
+      
+      else {
+        location_my %>% dplyr::filter(subzone_name == input$sz_my_1)%>% 
+          dplyr::filter(Time == input$time_my)%>%
+          dplyr::filter(Day == input$week_my)        
+      }
     })
     
     output$map_my <- renderLeaflet({
         map_data <- location_my_map()
-        map_data %>% leaflet(width = 1600, height = 1200)%>%
-            addProviderTiles("CartoDB", group = "CartoDB") %>% 
+        map_data %>% leaflet()%>%
+            addProviderTiles("CartoDB") %>% 
             addCircleMarkers(lng = ~lon, 
                              lat = ~lat,
                              radius = ~tap_in_out_radius,
                              fillOpacity = 0.75,
                              label = ~Description, 
-                             popup = ~paste0('Tap in Volume: ', TOTAL_TAP_IN_VOLUME, "<br/>", 'Tap out volume: ', TOTAL_TAP_OUT_VOLUME),
-                             color =  ~pal(planning_area)
+                             popup = ~paste0("<b>", Description, "</b>", "<br/>", 'Tap in Volume: ', TapIns, "<br/>", 'Tap out volume: ', TapOuts),
+                             color = 'blue'
                              ) %>%
             setMaxBounds(lng1 = 103.801959 + .25, 
                          lat1 = 1.32270 + .25, 
                          lng2 = 103.801959 - .25, 
-                         lat2 = 1.32270 - .25)%>%
-            addLayersControl(baseGroups =unique(planning_area_list_my)
-            )
+                         lat2 = 1.32270 - .25)
     })
     
-    output$tbl_my <- DT::renderDataTable({
+    output$tbl_my <- DT::renderDT({
         DT::datatable(
-            location_my_map(),
+            #location_my_map(),
+            location_my_map()[c('PlanningArea', 'subzone_name', 'Day', 'Time', 'Description', 'RoadName', 'TapIns', 'TapOuts')]%>%
+              rename(c(SubzoneName = subzone_name)),
             extensions = "Scroller",
             style = "bootstrap",
             class = "compact",
@@ -84,13 +91,152 @@ server <- function(input, output) {
                 deferRender = TRUE,
                 scrollY = 300,
                 scroller = TRUE,
-                dom = 'tp'
-            )
+                dom = 'tp')
         )
+    })
+    
+    ## Mengyong Plot Centrality Map
+    my_map_centrality_node <- reactive({
+      if (input$radio_my2 == 'PA' & input$radio_my3 == 'between_my_filter') {
+        map_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
+          dplyr::filter(between.f >= input$centrality_filter[1] & between.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = between.f)
+      }
+      
+      else if (input$radio_my2 == 'PA' & input$radio_my3 == 'closeness_my_filter') {
+        map_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
+          dplyr::filter(closeness.f >= input$centrality_filter[1] & closeness.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = closeness.f)     
+      }
+
+      else if (input$radio_my2 == 'PA' & input$radio_my3 == 'degree_my_filter') {
+        map_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
+          dplyr::filter(degree.f >= input$centrality_filter[1] & degree.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = degree.f)
+      }
+      
+      else if (input$radio_my2 == 'PA' & input$radio_my3 == 'eigen_my_filter') {
+        map_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
+          dplyr::filter(eigen.f >= input$centrality_filter[1] & eigen.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = eigen.f)
+      }
+      
+      else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'between_my_filter') {
+        map_table %>% dplyr::filter(subzone_name == input$sz_my_2)%>%
+          dplyr::filter(between.f >= input$centrality_filter[1] & between.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = between.f)
+      }
+      
+      else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'closeness_my_filter') {
+        map_table %>% dplyr::filter(subzone_name == input$sz_my_2)%>%
+          dplyr::filter(closeness.f >= input$centrality_filter[1] & closeness.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = closeness.f)      
+      }
+      
+      else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'degree_my_filter') {
+        map_table %>% dplyr::filter(subzone_name == input$sz_my_2)%>%
+          dplyr::filter(degree.f >= input$centrality_filter[1] & degree.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = degree.f)
+      }
+      
+      else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'eigen_my_filter') {
+        map_table %>% dplyr::filter(subzone_name == input$sz_my_2)%>%
+          dplyr::filter(eigen.f >= input$centrality_filter[1] & eigen.f <= input$centrality_filter[2])%>%
+          mutate(combined.f = eigen.f)
+      }
+    })
+    
+    my_map_centrality_edge <- reactive({
+      if (input$radio_my2 == 'PA' & input$radio_my3 == 'between_my_filter') {
+        edge_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
+          dplyr::filter(between.f >= input$centrality_filter[1] & between.f <= input$centrality_filter[2])
+      }
+      
+      else if (input$radio_my2 == 'PA' & input$radio_my3 == 'closeness_my_filter') {
+        edge_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
+          dplyr::filter(closeness.f >= input$centrality_filter[1] & closeness.f <= input$centrality_filter[2])        
+      }
+      
+      else if (input$radio_my2 == 'PA' & input$radio_my3 == 'degree_my_filter') {
+        edge_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
+          dplyr::filter(degree.f >= input$centrality_filter[1] & degree.f <= input$centrality_filter[2])
+      }
+      
+      else if (input$radio_my2 == 'PA' & input$radio_my3 == 'eigen_my_filter') {
+        edge_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
+          dplyr::filter(eigen.f >= input$centrality_filter[1] & eigen.f <= input$centrality_filter[2])
+      }
+      
+      else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'between_my_filter') {
+        edge_table %>% dplyr::filter(subzone_name == input$sz_my_2)%>%
+          dplyr::filter(between.f >= input$centrality_filter[1] & between.f <= input$centrality_filter[2])
+      }
+      
+      else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'closeness_my_filter') {
+        edge_table %>% dplyr::filter(subzone_name == input$sz_my_2)%>%
+          dplyr::filter(closeness.f >= input$centrality_filter[1] & closeness.f <= input$centrality_filter[2])        
+      }
+      
+      else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'degree_my_filter') {
+        edge_table %>% dplyr::filter(subzone_name == input$sz_my_2)%>%
+          dplyr::filter(degree.f >= input$centrality_filter[1] & degree.f <= input$centrality_filter[2])
+      }
+      
+      else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'eigen_my_filter') {
+        edge_table %>% dplyr::filter(subzone_name == input$sz_my_2)%>%
+          dplyr::filter(eigen.f >= input$centrality_filter[1] & eigen.f <= input$centrality_filter[2])
+      }
+    })
+  
+    
+    
+    output$map_my_centrality <- renderLeaflet({
+      map_nodes <- my_map_centrality_node()
+      map_edges <- my_map_centrality_edge()
+    
+     map3 <- map_nodes %>% leaflet()%>%
+        addProviderTiles("CartoDB") %>% 
+        setMaxBounds(lng1 = 103.801959 + .25, 
+                     lat1 = 1.32270 + .25, 
+                     lng2 = 103.801959 - .25, 
+                     lat2 = 1.32270 - .25)
+    
+    for(i in 1:nrow(map_edges)){
+      map3 <- addPolylines(map3, lat = as.numeric(map_edges[i, c('lat.f', 'lat.t')]), 
+                           lng = as.numeric(map_edges[i, c('long.f', 'long.t')]),
+                           weight = 0.75,
+                           color = 'red'
+      )
+    }
+
+    for(i in 1:nrow(map_nodes)){
+      map3<-addCircleMarkers(map3, lat = as.numeric(map_nodes[i, 'lat.f']), 
+                             lng = as.numeric(map_nodes[i,'long.f']),
+                             radius =(as.numeric(map_nodes[i, 'combined.f'])*0.7*40),
+                             color='blue',
+                             fillOpacity = 0.75,
+                             label = map_nodes[i,'id.Description'],
+                             popup = ~paste0("<b>", map_nodes[i,'Description'], "</b>", "<br/>", 'Betweenness Centrality: ', round(map_nodes[i,'between.f'],3), "<br/>", 
+                                             'Closeness Centrality: ', round(map_nodes[i,'closeness.f'],3), "<br/>", 'Eigenvalue Centrality: ', round(map_nodes[i,'eigen.f'],3), 
+                                             "<br/>", 'Degree Centrality: ', round(map_nodes[i,'degree.f'],3))
+      )}
+     map3
+    })
+    
+    output$tbl_my_2 <- DT::renderDT({
+      DT::datatable(
+        my_map_centrality_node()[c('planning_area', 'BusStopCode', 'RoadName', 'Description', 'between.f', 'closeness.f', 'eigen.f', 'degree.f')]%>%
+          rename(c(PlanningArea = planning_area, BetweennessCentrality = between.f, ClosenessCentrality = closeness.f, EigenvalueCentrality= eigen.f, DegreeCentrality = degree.f)),
+        extensions = "Scroller",
+        style = "bootstrap",
+        class = "compact",
+        width = "100%",
+        options = list(
+          deferRender = TRUE,
+          scrollY = 300,
+          scroller = TRUE,
+          dom = 'tp')
+      )
     })
 
 }
-
-#location_my['BusStopCode', 'Description', 'RoadName', 'planning_area', 'TOTAL_TAP_IN', 'TOTAL_TAP_OUT_VOLUME', 'TIME_PER_HOUR', 'lon', 'lat', 'tap_in_out_radius']%>%
-#    rename(c(TapIns = TOTAL_TAP_IN, TapOuts = TOTAL_TAP_OUT_VOLUME, Time = TIME_PER_HOUR, PlanningArea = planning_area)) %>% 
-#    dplyr::filter(planning_area %in% input$planning_region_my)

@@ -11,41 +11,55 @@ ui <- dashboardPage(
                      sidebarMenu(id = 'sbm',
                                  menuItem('Home', tabName = 'Home', icon=icon("home")),
                                  menuItem('Flow', tabName = 'Flow_Diagrams', icon = icon("bus")),
-                                 menuItem('Proportional_Symbol_Map', tabName = 'ProportionalSymbolMap_Diagrams', icon = icon("connectdevelop")),
-                                 menuItem('Centrality', tabName = 'Centrality', icon = icon("globe")),
+                                 menuItem('Passenger Volume', tabName = 'Passenger_volume', icon = icon("connectdevelop")),
+                                 menuItem('Busstop Centrality', tabName = 'Centrality', icon = icon("globe")),
                                  menuItem('GravityModel', tabName = 'Gravity_Model', icon = icon("chart-line")),
                                  menuItem('Download', tabName = 'Download', icon = icon("download"))# tabs are here!
                                 )
                     ), # end of DashboardSiderBar
+
     dashboardBody(
         tabItems(
             tabItem(tabName = 'Home',
                     fluidPage(
-                        titlePanel("Overview"),
-                        
-                        sidebarLayout(
-                            sidebarPanel(
-                                helpText("Create demographic maps with 
-               information from the 2010 US Census."),
-                                
-                                selectInput("var", 
-                                            label = "Choose a variable to display",
-                                            choices = c("Percent White", 
-                                                        "Percent Black",
-                                                        "Percent Hispanic", 
-                                                        "Percent Asian"),
-                                            selected = "Percent White"),
-                                
-                                sliderInput("range", 
-                                            label = "Range of interest:",
-                                            min = 0, max = 100, value = c(0, 100))
-                            ),
+                       # titlePanel("Home"),
+                        fluidRow(
+                            column(12,
+                                   img(src = "SBS-Transit-bus-5.jpg", height = 300),
+                                   h1('Re-imaginging Bus Transport Network in Singapore'),
+                                   p("Singapore's public transport use rose to hit a record high in 2018, with a total of 7.54 million trips made on buses or trains each day."),
+                                   p("Here's what may come across your mind: Do you ever have experiences where a bus ride that is supposed to be short and quick took way longer 
+                                   than expected? Are you frustrated that the bus stops at every stop even though there's nobody boarding or alighting? And why do we have so many 
+                                   bus stops that almost nobody uses?"),
+                                   p("What if we can reimagine the public bus network in Singapore through data?"),
+                                   p("In this project, we will use use data visualization techniques to map out all transportation nodes in Singapore and re-propose a different way 
+                                     of organizing our bus services, which include bus stops, bus routes, and connectivity within region and from regions to regions."),
+                                  h2("Main Packages Used"),
+                                  p("Shiny is available on CRAN, so you can install it in the usual way from your R console:"),
+                                  code('install.packages(shiny)'),
+                                  br(),
+                                  code('install.packages(dplyr)'),
+                                  br(),
+                                  code('install.packages(tidyverse)'),
+                                  br(),
+                                  code('install.packages(leaflet)'),
+                                  br(),
+                                  code('install.packages(tidygraph)'),
+                                  br(),
+                                  code('install.packages(flows)'),
+                                  br(),
+                                  code('install.packages(sf)'),
+                                  br(),
+                                  h2("Links"),
+                                  a("Github", href = "https://github.com/cjy93/LTA_bus_analysis"),
+                                  br(),
+                                  a("Wikipedia", href = "https://wiki.smu.edu.sg/1920t2isss608/Group08_proposal"),
+                                  
+
+                                  )
                             
-                            mainPanel(
-                                textOutput("selected_var")
-                            )
                         )
-                    )
+                        )
             ), #end of tabname "home" 
             
             tabItem(tabName = 'Flow_Diagrams',
@@ -78,72 +92,96 @@ ui <- dashboardPage(
                     )
             ), #end of tabname "flow"  
             
-            tabItem(tabName = 'ProportionalSymbolMap_Diagrams',
+            ### Passenger Volume by Busstop ##
+            tabItem(tabName = 'Passenger_volume',
                     fluidPage(
-                        titlePanel("Proportional Symbol Map Diagrams"),
-                        
+                        titlePanel("Passenger Volume"),
                         sidebarLayout(
                             sidebarPanel(
-                                helpText("Select Planning Area"),
+                                radioButtons("radio_my1", h3("Choose Region Filter"),
+                                             choices = list("Planning Area" = 'PA', 
+                                                            "Subzone" = 'SZ'), selected = 'PA'),
                                 
-                                selectInput(inputId = "planning_region_my", 
-                                            label = "Planning Region",
-                                            choices = planning_area_list_my,
-                                            selected = "Ang Mo Kio"),
+                                conditionalPanel(condition = "input.radio_my1=='PA'", 
+                                                  selectizeInput(
+                                                      'pa_my_1', 'Planning Area', choices = sort(unique(busstops$planning_area)),
+                                                      selected = 'Ang Mo Kio'
+                                                  ) 
+                                                 ), 
+                                
+                                conditionalPanel(condition = "input.radio_my1=='SZ'", 
+                                                  selectizeInput(
+                                                      'sz_my_1', 'SubZone', choices = sort(unique(busstops$subzone_name)),
+                                                      selected = 'Admiralty'
+                                                      )
+                                                    ), 
                                 selectInput(inputId = "week_my", 
-                                            label = "Day of the Week",
+                                            label = "Weekday / Weekend",
                                             choices = c('Weekday' = 'WEEKDAY',
                                                         'Weekend' = 'WEEKENDS/HOLIDAY'),
                                             selected = "WEEKDAY"),
-                                
                                 radioButtons(inputId = 'time_my',
                                              label = 'Time of the Day',
-                                             choices = c('06:00' = 6,
-                                                         '07:00' = 7,
-                                                         '08:00' = 8,
-                                                         '09:00' = 9,
-                                                         '10:00' = 10,
-                                                         '11:00' = 11,
-                                                         '12:00' = 12,
-                                                         '13:00' = 13,
-                                                         '14:00' = 14,
-                                                         '15:00' = 15,
-                                                         '16:00' = 16,
-                                                         '17:00' = 17,
-                                                         '18:00' = 18,
-                                                         '19:00' = 19,
-                                                         '20:00' = 20,
-                                                         '21:00' = 21,
-                                                         '22:00' = 22,
-                                                         '23:00' = 23
-
-                                                         ),
-                                             selected = 8)
+                                             choices = c('06:00' = 6,'07:00' = 7,'08:00' = 8,'09:00' = 9,'10:00' = 10,'11:00' = 11,'12:00' = 12,'13:00' = 13,
+                                                         '14:00' = 14,'15:00' = 15,'16:00' = 16,'17:00' = 17,'18:00' = 18,'19:00' = 19,'20:00' = 20, '21:00' = 21,
+                                                         '22:00' = 22,'23:00' = 23),
+                                             selected = 8),
                             ),
                             
-                            
                             mainPanel(
-                                #put in viz here
-                                #leafletOutput("map_my"),
-                                dataTableOutput("tbl_my")
-                                
+                                leafletOutput("map_my"),
+                                DT::dataTableOutput("tbl_my")
+                                # https://stackoverflow.com/questions/50128349/filtering-leaflet-map-data-in-shiny
                             )
                         )
                     )
-            ), #end of tabname "ProportionalSymbolMap_Diagrams" 
+            ), #end of tabname Passenger Volume by Busstop 
             
+            ### Centrality ###
             tabItem(tabName = 'Centrality',
                     fluidPage(
                         titlePanel("Centrality"),
-                        
+
                         sidebarLayout(
-                            sidebarPanel(
-                                
-                            ),
-                            
-                            mainPanel(
-                                
-                            )
+                          sidebarPanel(
+                              radioButtons("radio_my2", h3("Choose Region Filter"),
+                                           choices = list("Planning Area" = 'PA', 
+                                                          "Subzone" = 'SZ'), selected = 'PA'),
+                              
+                              conditionalPanel(condition = "input.radio_my2=='PA'", 
+                                               selectizeInput(
+                                                   'pa_my_2', 'Planning Area', choices = sort(unique(busstops$planning_area)),
+                                                   selected = 'Ang Mo Kio'
+                                               ) 
+                              ), 
+                              
+                              conditionalPanel(condition = "input.radio_my2=='SZ'", 
+                                               selectizeInput(
+                                                   'sz_my_2', 'SubZone', choices = sort(unique(busstops$subzone_name)),
+                                                   selected = 'Admiralty'
+                                               )
+                              ), 
+                              
+                              radioButtons("radio_my3", h3("Choose Centrality filter"),
+                                           choices = list("Betweenness Centrality" = "between_my_filter",
+                                                          "Closeness Centrality" = "closeness_my_filter",
+                                                          "Degree Centrality" = "degree_my_filter",
+                                                          "Eigenvalue Centrality" = "eigen_my_filter"), selected = "between_my_filter"),
+                              
+                              sliderInput(
+                                  inputId = "centrality_filter", 
+                                  label = "Centrality", 
+                                  min = 0, 
+                                  max = 1, 
+                                  value = c(0, 1))
+                              
+                          ),
+                          
+                          mainPanel(
+                            #put in viz here
+                            leafletOutput("map_my_centrality"),
+                            DT::dataTableOutput("tbl_my_2")
+                          )
                         )
                     )
             ), #end of tabname "Centrality" 
@@ -158,7 +196,6 @@ ui <- dashboardPage(
                             ),
                             
                             mainPanel(
-                                
                             )
                         )
                     )
@@ -183,5 +220,3 @@ ui <- dashboardPage(
         )# end of TabItems
     ) #end of dashboardBody
 )
-
-#https://shiny.rstudio.com/gallery/soccer-player-similarity.html
