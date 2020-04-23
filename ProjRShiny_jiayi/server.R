@@ -12,15 +12,81 @@ server <- function(input, output, session) {
     #     }, simplify = FALSE))
     # })
     ###################################################### For Aggregate_Filter Tab JY ######################################################
-    # Show PA options when 
-    # datasetInput <- reactive({
-    #     switch(input$radio,
-    #            "Planning Area" = 'PA')
-    # })
     # read in data (this data will change so we put in server)
     node_SZ <- read_csv("data/node_flowmap_SZ.csv")
-    edge_id2_SZ <- read_csv("data/edge_flowmap_SZ_passenger.csv")
+    node_SZ$id = as.character(as.numeric(node_SZ$id))
+    #edge_id2_SZ <- read_csv("data/edge_flowmap_SZ_passenger.csv")
     
+    # Load in edges file, which will change between selection of "passenger" or "n()"
+    edges_data <- reactive({ if (input$radio_flowsize == "passenger"){
+      read_csv("data/origin_dest_Full_Aggregated_BusTrips.csv")}
+      else {
+        read_csv("data/origin_dest_Full_Aggregated_n_weight.csv")
+      }})
+    
+    edges_full<- reactive({ if (input$radio=='SZ'){
+      edges <- edges_data()
+      #%>%
+      #   select(-c('YEAR_MONTH','PT_TYPE','ORIGIN_PT_CODE','DESTINATION_PT_CODE','RoadName_Origin','Description_Origin','RoadName_Destination','Description_Destination'))
+      # we need to append "subzone_origin" and "subzone_dest" so we can calculate weights based on busstops in these subzones
+      edges_join <- merge(edges, busstops, by.x='BusStopCode_x', by.y = 'BusStopCode') %>% 
+        rename(subzone_ori = subzone_name) %>% rename(planning_area_origin = planning_area) #%>% select(-c("subzone_origin","subzone_destination"))
+      edges_join2 <- merge(edges_join, busstops, by.x='BusStopCode_y', by.y = 'BusStopCode') %>% 
+        rename(subzone_dest = subzone_name)  %>% rename(planning_area_dest = planning_area)
+      # remove the intermediate dataframe from cache
+      
+      edges <- edges_join2 %>%
+        #select('subzone_ori','subzone_dest') %>%
+        rename(from =subzone_ori) %>%
+        rename(to = subzone_dest) 
+      edges$from = toupper(edges$from)
+      edges$to = toupper(edges$to)
+      edges <- edges %>% dplyr::select(-c("district.x","district.y","subzone_origin","subzone_destination"))
+      # add a column for category so it fit into the online model
+      edges_full <- cbind(edges,category=1)
+      edges_full}
+      else{
+        edges <- edges_data()
+        #%>%
+        #   select(-c('YEAR_MONTH','PT_TYPE','ORIGIN_PT_CODE','DESTINATION_PT_CODE','RoadName_Origin','Description_Origin','RoadName_Destination','Description_Destination'))
+        # we need to append "subzone_origin" and "subzone_dest" so we can calculate weights based on busstops in these subzones
+        edges_join <- merge(edges, busstops, by.x='BusStopCode_x', by.y = 'BusStopCode') %>% 
+          rename(subzone_ori = subzone_name) %>% rename(planning_area_origin = planning_area) #%>% select(-c("subzone_origin","subzone_destination"))
+        edges_join2 <- merge(edges_join, busstops, by.x='BusStopCode_y', by.y = 'BusStopCode') %>% 
+          rename(subzone_dest = subzone_name)  %>% rename(planning_area_dest = planning_area)
+        # remove the intermediate dataframe from cache
+        
+        edges <- edges_join2 %>%
+          #select('subzone_ori','subzone_dest') %>%
+          rename(from =planning_area_origin) %>%
+          rename(to = planning_area_dest) 
+        edges$from = toupper(edges$from)
+        edges$to = toupper(edges$to)
+        edges <- edges %>% dplyr::select(-c("district.x","district.y","subzone_origin","subzone_destination"))
+        # add a column for category so it fit into the online model
+        edges_full <- cbind(edges,category=1)
+        edges_full
+      }}) # end of reactive
+    
+    
+    get_index = node_SZ %>% dplyr::select(c('id','name'))
+    
+    edge_id2_SZ <- reactive({
+      edge_id <- merge(edges_full(), get_index, by.x = "from", by.y = "name") %>%
+        dplyr::select(-c("from")) %>%
+        rename(from=id) 
+      edge_id2 <- merge(edge_id, get_index, by.x = "to", by.y = "name") %>%
+        dplyr::select(-c("to")) %>%
+        rename(to=id)
+      
+      edge_id2$to <- as.character(edge_id2$to)
+      edge_id2$from <- as.character(edge_id2$from)
+      edge_id2_SZ <- edge_id2 %>%
+        dplyr::select(c('from','to','DAY_TYPE','weight','category'))
+    }) # end of reactive edge_id2_SZ
+    
+    
+    # not to delete this is dummy test 
     output$ex_out <- reactive({
         str(c(input$radio,input$pa_from, input$pa_to, input$sz_from, input$sz_to)
         )
@@ -31,7 +97,36 @@ server <- function(input, output, session) {
   
     
     # plot the FROM Table
+    ## Filter by district then by PA/SZ. Need not do this for renderPlot since Subzone is already unique by the District
+    observe({
+      print("before")
+      print(input$district_from)
+      if (is.null(input$district_from)== FALSE){
+        pa_sub_from <-  busstops %>% filter(district %in% input$district_from)
+        print("middle")
+        updateSelectizeInput(session, 'pa_from', choices=pa_sub_from$planning_area, server=TRUE)
+        print("after")}
+    })
+    observe({
+      if (is.null(input$district_to)== FALSE){
+        pa_sub_to <-  busstops %>% filter(district %in% input$district_to)
+        updateSelectizeInput(session, 'pa_to', choices=pa_sub_to$planning_area, server=TRUE)}
+    })
+    observe({
+      if (is.null(input$district_from)== FALSE){
+        sz_sub_from <-  busstops %>% filter(district %in% input$district_from)
+        updateSelectizeInput(session, 'sz_from', choices=sz_sub_from$subzone_name, server=TRUE)}
+    })
+    observe({
+      if (is.null(input$district_to)== FALSE){
+        sz_sub_to <-  busstops %>% filter(district %in% input$district_to)
+        updateSelectizeInput(session, 'sz_to', choices=sz_sub_to$subzone_name, server=TRUE)}
+    })
+    
+    # render tables
     output$mytableFrom = DT::renderDataTable({
+      print("input_pafrom")
+      print(input$pa_from)
         if (input$radio=="PA"){
             busstops%>% filter(busstops$planning_area %in% input$pa_from)
         }
@@ -58,7 +153,7 @@ server <- function(input, output, session) {
     ### Very Important: To update the "To" list based on edges from the "From"
     sz_selection_from <- reactive({
       nodeidFrom <- node_SZ[which(node_SZ$name %in% input$sz_from) ,] 
-      edgeid <- edge_id2_SZ[which(edge_id2_SZ$from %in% nodeidFrom$id),] 
+      edgeid <- edge_id2_SZ()[which(edge_id2_SZ()$from %in% nodeidFrom$id),] 
       nodeidTo <- node_SZ[which(node_SZ$id %in% edgeid$to) ,]
       nodeNameTo <- unique(nodeidTo$name)
       nodeNameTo #grab the last variable
@@ -71,32 +166,32 @@ server <- function(input, output, session) {
     })
     ### end of update "To" list based on edges available
     
-    ## to affect the district option in flow map
-    ### Very Important: To update the "from" list in district based on the from in Edges
-    sz_selection_district_from <- reactive({
-      nodeidFrom <- node_SZ[which(node_SZ$name %in% input$sz_from) ,] 
-      edgeid <- edge_id2_SZ[which(edge_id2_SZ$from %in% nodeidFrom$id),] 
-      nodeidTo <- node_SZ[which(node_SZ$id %in% edgeid$from) ,]
-      nodeDistrictFrom <- unique(nodeidTo$district)
-      nodeDistrictFrom #grab the last variable
-    })
-    observe({
-      updateSelectizeInput(session, 'district_from', choices=sz_selection_district_from(), selected = sz_selection_district_from(), server=TRUE) # not work did not grab only the available district
-    })
-    
-    # to affect the district option in flow map
-    ### Very Important: To update the "from" list in district based on the To in Edges
-    sz_selection_district_to <- reactive({
-      nodeidFrom <- node_SZ[which(node_SZ$name %in% input$sz_from) ,] 
-      edgeid <- edge_id2_SZ[which(edge_id2_SZ$to %in% nodeidFrom$id),] 
-      nodeidTo <- node_SZ[which(node_SZ$id %in% edgeid$to) ,]
-      nodeDistrictFrom <- unique(nodeidTo$district)
-      nodeDistrictFrom #grab the last variable
-    })
-    observe({
-      updateSelectizeInput(session, 'district_to', choices=sz_selection_district_to(), selected = sz_selection_district_from(),server=TRUE) # not work did not grab only the available district
-    })
-    ### end of update district
+    # ## to affect the district option in flow map
+    # ### Very Important: To update the "from" list in district based on the from in Edges
+    # sz_selection_district_from <- reactive({
+    #   nodeidFrom <- node_SZ[which(node_SZ$name %in% input$sz_from) ,] 
+    #   edgeid <- edge_id2_SZ[which(edge_id2_SZ$from %in% nodeidFrom$id),] 
+    #   nodeidTo <- node_SZ[which(node_SZ$id %in% edgeid$from) ,]
+    #   nodeDistrictFrom <- unique(nodeidTo$district)
+    #   nodeDistrictFrom #grab the last variable
+    # })
+    # observe({
+    #   updateSelectizeInput(session, 'district_from', choices=sz_selection_district_from(), selected = sz_selection_district_from(), server=TRUE) # not work did not grab only the available district
+    # })
+    # 
+    # # to affect the district option in flow map
+    # ### Very Important: To update the "from" list in district based on the To in Edges
+    # sz_selection_district_to <- reactive({
+    #   nodeidTo <- node_SZ[which(node_SZ$name %in% input$sz_to) ,] 
+    #   edgeid <- edge_id2_SZ[which(edge_id2_SZ$to %in% nodeidTo$id),] 
+    #   nodeidTo <- node_SZ[which(node_SZ$id %in% edgeid$to) ,]
+    #   nodeDistrictFrom <- unique(nodeidTo$district)
+    #   nodeDistrictFrom #grab the last variable
+    # })
+    # observe({
+    #   updateSelectizeInput(session, 'district_to', choices=sz_selection_district_to(), selected = sz_selection_district_to(),server=TRUE) # not work did not grab only the available district
+    # })
+    # ### end of update district
     
     # Download table "from"
     output$downloadFrom <- downloadHandler(
@@ -209,10 +304,10 @@ server <- function(input, output, session) {
       
       if (input$radio=="SZ"){
         # filter the Edges with temporary variable "node2" and "node3"
-        node2 <- node_SZ %>% filter(name %in% dataInput_From_SZ() ) %>% filter(district %in% dataInput_From_SZ_district())
-        edge_id2_SZ_filtered <- edge_id2_SZ[which(edge_id2_SZ$from %in% node2$id) ,] 
+        node2 <- node_SZ %>% filter(name %in% dataInput_From_SZ() ) #%>% filter(district %in% dataInput_From_SZ_district())
+        edge_id2_SZ_filtered <- edge_id2_SZ()[which(edge_id2_SZ()$from %in% node2$id) ,] 
         
-        node3 <- node_SZ %>% filter(name %in% dataInput_To_SZ())%>% filter(district %in% dataInput_To_SZ_district())
+        node3 <- node_SZ %>% filter(name %in% dataInput_To_SZ())  #%>% filter(district %in% dataInput_To_SZ_district())
         print("edges before day type")
         print(edge_id2_SZ_filtered)
         print(input$checkGroup)
@@ -226,8 +321,8 @@ server <- function(input, output, session) {
     node_SZ_filtered_reactive <- reactive({
       if (input$radio=="SZ"){
         # filter nodes 
-        node_SZ_filtered <- node_SZ %>% filter(name %in% dataInput_From_SZ() | name %in% dataInput_To_SZ()) %>%
-          filter(district %in% dataInput_From_SZ_district() | district %in% dataInput_To_SZ_district())
+        node_SZ_filtered <- node_SZ %>% filter(name %in% dataInput_From_SZ() | name %in% dataInput_To_SZ()) #%>%
+          #filter(district %in% dataInput_From_SZ_district() | district %in% dataInput_To_SZ_district())
         node_SZ_filtered
       }
       
@@ -272,10 +367,10 @@ server <- function(input, output, session) {
     ################ Ploting MapJy##########
     output$map_jy <- #renderPlotly({
       renderPlot({
-      validate(
-        need(input$district_from != '', 'Please aggregate filters from the previous tab'),
-        need(input$district_to != '', 'Please aggregate filters from the previous tab')
-      )
+      # validate(
+      #   need(input$district_from != '', 'Please aggregate filters from the previous tab'),
+      #   need(input$district_to != '', 'Please aggregate filters from the previous tab')
+      # )
     # filter based on "Aggregate Filter" tab
     #if (input$radio=="SZ"){
     #  # filter the Edges with temporary variable "node2" and "node3"
@@ -289,7 +384,8 @@ server <- function(input, output, session) {
     #}
 
     node_SZ_filtered = node_SZ_filtered_reactive()
-    edge_id2_SZ_filtered = edge_id2_SZ_filtered_reactive()
+    #edge_id2_SZ_filtered = edge_id2_SZ_filtered_reactive()
+    edge_id2_SZ_filtered = edges_for_plot4_SZ_reactive()
     
     # filter nodes based on slider
     #print("filterNode")
@@ -303,8 +399,8 @@ server <- function(input, output, session) {
     # filter edges based on nodes left
     #print("edges befpre")
     #print(edge_id2_SZ_filtered)
-    edge_id2_SZ_filtered = unique(edge_id2_SZ_filtered[which(edge_id2_SZ_filtered$from %in% node_SZ_filtered$id) ,]) 
-    edge_id2_SZ_filtered = unique(edge_id2_SZ_filtered[which(edge_id2_SZ_filtered$to %in% node_SZ_filtered$id) ,])
+    edge_id2_SZ_filtered = edge_id2_SZ_filtered[which(edge_id2_SZ_filtered$from %in% node_SZ_filtered$id) ,]
+    edge_id2_SZ_filtered = edge_id2_SZ_filtered[which(edge_id2_SZ_filtered$to %in% node_SZ_filtered$id) ,]
     #print("edges after")
     #print(edge_id2_SZ_filtered)
     #print("hjshkjha")
@@ -313,8 +409,9 @@ server <- function(input, output, session) {
     print(edge_id2_SZ_filtered)
     print('flowEdge')
     print(input$flowEdge)
-    edge_id2_SZ_filtered <- edge_id2_SZ_filtered %>% filter(weight > input$flowEdge[1]) %>% filter(weight <= input$flowEdge[2])
-    
+    edge_id2_SZ_filtered <- edge_id2_SZ_filtered %>% filter(weight >= input$flowEdge[1]) %>% filter(weight <= input$flowEdge[2])
+    print('edge_id2_SZ_filtered')
+    print(edge_id2_SZ_filtered)
     
     g_SZ <- graph_from_data_frame(edge_id2_SZ_filtered, directed = TRUE, vertices = node_SZ_filtered)
     #edges_for_plot_SZ <- edges_for_plot_SZ_reactive()
@@ -328,6 +425,7 @@ server <- function(input, output, session) {
     
     node_SZ_filtered$weight = degree(g_SZ)
     print("hjshkjha3")
+    print(edge_id2_SZ_filtered)
     
     #print(degree(g_SZ))
     
@@ -372,7 +470,7 @@ server <- function(input, output, session) {
     # convert all columns to numeric
     # https://stackoverflow.com/questions/19146354/batch-convert-columns-to-numeric-type
     
-    edges_for_plot4_SZ <- edges_for_plot4_SZ_reactive()
+    #edges_for_plot4_SZ <- edges_for_plot4_SZ_reactive()
     
     # # filter the edges on the map to show it can print correctly
     # edges_for_plot4_SZ <- unique(edges_for_plot4_SZ[which(edges_for_plot4_SZ$from %in% node_SZ_filtered$id) ,])
@@ -380,21 +478,21 @@ server <- function(input, output, session) {
     
     # filter the edges weight based on edges filter
     print("filtering edge plot4")
-    print(edges_for_plot4_SZ)
+    print(edge_id2_SZ_filtered)
     print("after filtering edge plot4")
-    print(edges_for_plot4_SZ)
+    print(edge_id2_SZ_filtered)
     
     # filter the nodes based on edges filter
     
     
     # Change error msg
-    print(count(edges_for_plot4_SZ))
+    print(count(edge_id2_SZ_filtered))
     print(count(node_SZ_filtered))
-    print(count(edges_for_plot4_SZ) == 0)
+    print(count(edge_id2_SZ_filtered) == 0)
     print(count(node_SZ_filtered) != 0)
-    print(count(edges_for_plot4_SZ) > 0 & count(node_SZ_filtered) > 0)
+    print(count(edge_id2_SZ_filtered) > 0 & count(node_SZ_filtered) > 0)
     validate(
-      need(count(edges_for_plot4_SZ) > 0 & count(node_SZ_filtered) > 0, 'There are no edge flow available, please change your settings')
+      need(count(edge_id2_SZ_filtered) > 0 & count(node_SZ_filtered) > 0, 'There are no edge flow available, please change your settings')
     )
     
     #edges_for_plot4_SZ <- edges_for_plot_SZ %>%
@@ -425,11 +523,12 @@ server <- function(input, output, session) {
     map_jy <- ggplot(lay_SZ) + map_gg2_SZ+ map_gg3_SZ +# ggraph(lay) 
         geom_edge_arc(aes(edge_width = weight,   # draw edges as arcs
                           circular = FALSE,show.legend = TRUE),
-                      data = edges_for_plot4_SZ, curvature = 0.33,
+                      data = edge_id2_SZ_filtered, curvature = 0.33,
                       alpha = 0.5) +
         scale_edge_width_continuous(range = c(0.5,5),             # scale for edge widths
                                     guide = FALSE) +
-        geom_node_point(aes(size = weight, color= as.factor(district)),show.legend = TRUE         # draw node # size = weight
+        geom_node_point(aes(size = weight, color= as.factor(district),alpha=0.5,stroke=0.5),show.legend = TRUE,     # draw node # size = weight # color outside geom is color of 
+                        #outer boundary of marker # fill is internal shading of point marker # outside is constant color, aes is mapping variables, eg for color
         ) +
         scale_size_continuous(range = c(1, 10), guide = FALSE) +    # scale for node sizes
         geom_node_text(aes(label = name),show.legend = FALSE, repel = TRUE, size = 3,
@@ -450,7 +549,7 @@ server <- function(input, output, session) {
     output$flowEdge_slider_ui_passenger <- renderUI({
       sliderInput("flowEdge",
                   label = "Range of interest for edge weights:",
-                  min = min(edge_id2_SZ_filtered_reactive()$weight), max = max(edge_id2_SZ_filtered_reactive()$weight), value = c(min(edge_id2_SZ_filtered_reactive()$weight), max(edge_id2_SZ_filtered_reactive()$weight)))
+                  min = min(edges_for_plot4_SZ_reactive()$weight), max = max(edges_for_plot4_SZ_reactive()$weight), value = c(min(edges_for_plot4_SZ_reactive()$weight), max(edges_for_plot4_SZ_reactive()$weight)))
     })
 
     
@@ -530,10 +629,12 @@ server <- function(input, output, session) {
           print('b')
           print(df_col_name_flow)
           
-          df_col_name_flow$id =  as.numeric(as.character(df_col_name_flow$id))
+          df_col_name_flow$id =  as.character(df_col_name_flow$id) 
           print('c')
           print(df_col_name_flow)
           
+          print("node_SZ_local")
+          print(node_SZ_local)
           heatmap_name <- inner_join(df_col_name_flow, node_SZ_local, by = 'id') 
           print('heatmap_name')
           print(heatmap_name)
@@ -668,17 +769,78 @@ server <- function(input, output, session) {
       })
       
     ############################################ Gravity Model Jia Yi #############################################
-    output$y_tap <- reactive({lm(input$yVar~ closeness + between + degree + eigen, data = pass_central)})
+    # For X variable selections
+    selectX <- c("closeness","between","degree","eigen")
+    
+    # what to show on drop down
+     observe({
+       updateSelectizeInput(session, 'select2_1', choices=selectX, selected = selectX[1], server=TRUE)
+     })  
+     
+     # left "select2_2" be dependent on output from 'select2_1'
+     observe({
+       selectXLess <- selectX[selectX!=input$select2_1]
+       updateSelectizeInput(session, 'select2_2', choices=selectXLess, selected = selectXLess[1], server=TRUE)
+     })
+     
+     
+     # https://www.statsandr.com/blog/a-shiny-app-for-simple-linear-regression-by-hand-and-in-r/
+     
+     
+     # 2 variable
+     #model <- lm(input$yVar ~ input$select2_1 + input$select2_2, data = pass_central)
+     ## Function to extract X
+     extract_X <- function(selectId) {
+       if (input$selectId == "closeness"){
+         X <- closeness}
+       else if (input$selectId == "between"){
+         X <- between}
+       else if (input$selectId == "degree"){
+         X <- degree}
+       else{
+         X <- eigen
+       }
+       X #picks up the last item
+     }
+     
+     # reactive linear model inputs from y and x from UI
+     modelInOut = reactive({
+       # fml = as.formula(sprintf('%s ~ %s + %s +%s + %s', input$yVar, input$select2_1, "between", "degree", "eigen"))
+       fml = as.formula(sprintf('%s ~ %s + %s ', input$yVar, input$select2_1, input$select2_2))
+       fit = lm(fml, data=pass_central)
+       #model_lm  <- lm(frequencyIn~ closeness + between + degree + eigen, data = pass_central)
+       steptest <- stepAIC(fit, direction = "both")
+       steptest
+     })
+     #modelOut = lm(frequencyOut~ closeness + between + degree + eigen, data = pass_central)
+     
+     # for the UI
+     
+     
+     #steptest <- stepAIC(modelIn(), direction = "both")
+     #steptest <- stepAIC(modelOut, direction = "both")
+     output$AICtest <- renderPlot({
+       plottStats(modelInOut())
+       #{if(input$models=="frequencyIn"){plottStats(steptest)
+       #} else if(input$models=="frequencyOut"){plottStats(steptest2)
+       #} 
+       #}
+       #plottStats(step3)
+     })
+     
+     
+     ###############
+ 
     # for the UI
     output$yVarUI <- renderUI({
       selectInput("yVar", label = h4("Select dependent variable...."),
                   choices = list("Total Tap In Volume" = "frequencyIn", "Total Tap Out Volume" = "frequencyOut"),
                   selected = "frequencyIn")})
     # if only 2 element
-    #y_tap <- lm(input$yVar ~ closeness + between, data = pass_central )
+    
     # if 4 element
-    y_tap <- lm(frequencyIn ~ closeness + between + degree + eigen, data = pass_central)
-    step <- stepAIC(y_tap, direction = "both")
+    #y_tap <- lm(frequencyIn ~ closeness + between + degree + eigen, data = pass_central)
+    #step <- stepAIC(y_tap, direction = "both")
     model1 <- lm(frequencyIn ~ closeness + between + degree + eigen, data = pass_central)
     model2 <- lm(frequencyIn ~ closeness + between + degree,  data = pass_central)
     model3 <- lm(frequencyIn ~ closeness + between ,  data = pass_central)
@@ -790,23 +952,9 @@ server <- function(input, output, session) {
     
     
     ############ Testing Gravity model with other stuff
-    modelIn = lm(frequencyIn~ closeness + between + degree + eigen, data = pass_central)
-    modelOut = lm(frequencyOut~ closeness + between + degree + eigen, data = pass_central)
-    # for the UI
-    output$yVarUI <- renderUI({
-      selectInput("yVar", label = h4("Select dependent variable...."),
-                  choices = list("Total Tap In Volume" = "frequencyIn", "Total Tap Out Volume" = "frequencyOut"),
-                  selected = "frequencyIn")})
-    ##### above is KIV
-    steptest <- stepAIC(modelIn, direction = "both")
-    steptest <- stepAIC(modelOut, direction = "both")
-    output$AICtest <- renderPlot({
-      {if(input$models=="frequencyIn"){plottStats(steptest)
-      } else if(input$models=="frequencyOut"){plottStats(steptest2)
-      } 
-      }
-      #plottStats(step3)
-    })
+    ## To extract an input without the "" as string
+  
+    
     ############################################# Meng Yong ########################################################
     
     
