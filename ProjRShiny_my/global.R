@@ -17,7 +17,10 @@ library(tidygraph)
 library(tmap)
 library(flows)
 library(sp)
-
+library(RColorBrewer)
+library(plotly)
+library(ggthemes)
+library(dplyr)
 
 # Used packages
 #pacotes = c("shiny", "tidyverse", "shinydashboard",
@@ -117,11 +120,12 @@ location_my <- busstop_volume_lat_long_my %>%
 
 location_my$tap_in_out_radius <- (location_my$TOTAL_TAP_IN_VOLUME + location_my$TOTAL_TAP_OUT_VOLUME)**(1/2)/6
 location_my <- location_my[c('planning_area', 'subzone_name', 'DAY_TYPE', 'TIME_PER_HOUR', 'BusStopCode', 'Description', 'RoadName', 'TOTAL_TAP_IN_VOLUME', 'TOTAL_TAP_OUT_VOLUME', 'lon', 'lat', 'tap_in_out_radius')]%>%
-  rename(c(Day = DAY_TYPE, TapIns = TOTAL_TAP_IN_VOLUME, TapOuts = TOTAL_TAP_OUT_VOLUME, Time = TIME_PER_HOUR, PlanningArea = planning_area)) 
+  rename(c(Day = DAY_TYPE, TapIns = TOTAL_TAP_IN_VOLUME, TapOuts = TOTAL_TAP_OUT_VOLUME, Time = TIME_PER_HOUR, PlanningArea = planning_area)) %>%
+  dplyr::filter(Time >=6 & Time <= 23)
 
 planning_area_list_my <-sort(unique(location_my$PlanningArea))
-#pal <- colorFactor(palette = 'Set3', domain = planning_area_list_my)
 
+pal <- colorNumeric(palette = "RdPu", domain = location_my$tap_in_out_radius)
 
 ##################################################### Mengyong Centrality#########################################################
 
@@ -157,12 +161,12 @@ nodes_my$id <- as.character(nodes_my$id)
 #create graph structure
 bus_graph <- tbl_graph(nodes = nodes_my, edges = busroute_busstop_aggregated, directed = TRUE)
 
-#remove disconnected nodes
-
 
 #extract centrality
 bus_graph=bus_graph%>%mutate(betweenness_centrality = centrality_betweenness(normalized = TRUE)) %>%mutate(closeness_centrality = centrality_closeness(normalized = TRUE)) %>%
-  mutate(degree_centrality=centrality_degree(mode='out',normalized = TRUE))%>%mutate(eigen_centrality=centrality_eigen())
+  mutate(degree_centrality=centrality_degree(mode='out',normalized = TRUE))
+bus_graph = bus_graph %>% mutate(eigen_centrality=centrality_eigen(weight = bus_graph$betweenness_centrality, directed = TRUE, scale = FALSE))
+
 
 #get edge table
 plot_vector2<- as.data.frame(cbind(V(bus_graph)$Longitude,V(bus_graph)$Latitude,V(bus_graph)$betweenness_centrality,V(bus_graph)$closeness_centrality,
@@ -187,7 +191,7 @@ range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 
 edge_table$between.f <-range01(edge_table$between.f)
 edge_table$closeness.f <-range01(edge_table$closeness.f)
-edge_table$eigen.f <-range01(edge_table$eigen.f)
+edge_table$eigen.f <-round(range01(log(edge_table$eigen.f+1)**0.15),3)
 edge_table$degree.f <-range01(edge_table$degree.f)
 
 # get node table
@@ -197,10 +201,8 @@ map_table <- plot_vector2 %>%
 
 map_table$between.f <-round(range01(map_table$between.f),3)
 map_table$closeness.f <-round(range01(map_table$closeness.f),3)
-map_table$eigen.f <-round(range01(map_table$eigen.f),3)
+map_table$eigen.f <-round(range01(log(map_table$eigen.f+1)**0.15),3)
 map_table$degree.f <-round(range01(map_table$degree.f),3)
 
 #get the radius of the bubbles
 map_table$combined.f = (map_table$between.f*3+1)**(3/4) + (map_table$closeness.f*3+1)**(3/4) + (map_table$eigen.f*3+1)**(3/4) + (map_table$degree.f*3+1)**(3/4)
-
-write.csv(map_table ,"map_table.csv", row.names = FALSE)

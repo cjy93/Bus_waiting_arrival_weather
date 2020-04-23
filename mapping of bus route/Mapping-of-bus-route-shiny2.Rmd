@@ -25,11 +25,12 @@ for(p in packages){library
 
 #busstops
 
-busstop_information <- read.csv("data/busstops_with_planning_area.csv")[3:8]%>%
-  filter(planning_area != "Invalid")
-busstop_information$planning_area <- as.character(busstop_information$planning_area)
-busstop_information$BusStopCode <- as.character(busstop_information$BusStopCode)
-busstop_information$planning_area[busstop_information$planning_area %in% c('Central Water Catchment', 'Mandai', 'Marina South', 'Museum', 'Newton', 'Orchard', 'Outram', 
+busstops <- read.csv("data/busstop_lonlat_subzone_District.csv")%>%
+  dplyr::filter(planning_area != "Invalid")
+busstops$BusStopCode <- as.integer(busstops$BusStopCode)
+busstops$BusStopCode <- as.character(busstops$BusStopCode)
+busstops$planning_area <- as.character(busstops$planning_area)
+busstops$planning_area[busstops$planning_area %in% c('Central Water Catchment', 'Mandai', 'Marina South', 'Museum', 'Newton', 'Orchard', 'Outram', 
                                                                            'Seletar', 'Rochor', 'Singapore River', 'Tanglin', 'Southern Islands', 'River Valley', 'Paya Lebar', 
                                                                            'Straits View', 'Tengah')] <- "Others"
 
@@ -40,7 +41,7 @@ busstop_information$planning_area[busstop_information$planning_area %in% c('Cent
 busroute <- read_csv('data/bus_route_overall.csv')
 busroute$BusStopCode <- as.character(busroute$BusStopCode)
 busroute <- busroute[c('BusStopCode', 'Direction', 'Distance', 'ServiceNo', 'StopSequence')]
-busroute <- busroute[busroute$BusStopCode %in% as.list(unique(busstop_information['BusStopCode']))[['BusStopCode']], ] 
+busroute <- busroute[busroute$BusStopCode %in% as.list(unique(busstops['BusStopCode']))[['BusStopCode']], ] 
 
 busroute
 ```
@@ -60,7 +61,7 @@ busstops_from_to
 ```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
 #join the two tables together
 
-busroute_busstop <- dplyr::inner_join(busstops_from_to, busstop_information, by ='BusStopCode')
+busroute_busstop <- dplyr::inner_join(busstops_from_to, busstops, by ='BusStopCode')
 #keeps <- c('BusStopCode', 'BusStopCode_dest', 'Direction', 'Distance', 'ServiceNo', 'Latitude', 'Longitude', 'planning_area', 'Description')
 keeps <- c('BusStopCode', 'BusStopCode_dest')
 busroute_busstop <- busroute_busstop[, keeps, drop = FALSE] %>% 
@@ -89,7 +90,7 @@ busroute_busstop_aggregated
 
 
 ```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
-nodes_my <- busstop_information %>%
+nodes_my <- busstops %>%
   rename(id = BusStopCode)
 nodes_my$id <- as.character(nodes_my$id)
 
@@ -101,17 +102,6 @@ nodes_my
 ```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
 bus_graph <- tbl_graph(nodes = nodes_my, edges = busroute_busstop_aggregated, directed = TRUE)
 bus_graph
-```
-```{r}
-USA_CC = components(bus_graph, mode="strong")
-USA_CC$no
-#USA_CC$csize
-BigComp = which.max(USA_CC$csize)
-BigComp
-
-Main_USairports = induced_subgraph(bus_graph, 
-    which(bus_graph$membership == BigComp))
-Main_USairports
 ```
 
 
@@ -139,7 +129,7 @@ node3=data.frame(cbind(node1,node2))
 
 edge_table <- node3 %>%
   rename(c(long.f = V1, lat.f = V2, long.t = V1.1, lat.t = V2.1, between.f = V3, closeness.f = V4, eigen.f = V5, degree.f = V6))%>%
-  dplyr::left_join(busstop_information, by =c("long.f"= "Longitude", "lat.f" = "Latitude")) 
+  dplyr::left_join(busstops, by =c("long.f"= "Longitude", "lat.f" = "Latitude")) 
 
 keeps <- c("long.f","lat.f","long.t","lat.t", "planning_area", "between.f", "closeness.f", "eigen.f","degree.f" )
 edge_table <- edge_table[ , (names(edge_table) %in% keeps)]
@@ -147,6 +137,9 @@ edge_table <- edge_table[ , (names(edge_table) %in% keeps)]
 edge_table
 
 ```
+
+
+
 ```{r, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE, fig.height=20, fig.width=20}
 plot_vector2<- as.data.frame(cbind(V(bus_graph)$Longitude,V(bus_graph)$Latitude,V(bus_graph)$betweenness_centrality,V(bus_graph)$closeness_centrality,
                                    V(bus_graph)$eigen_centrality,V(bus_graph)$degree_centrality))
@@ -155,7 +148,7 @@ plot_vector2<- as.data.frame(cbind(V(bus_graph)$Longitude,V(bus_graph)$Latitude,
 
 map_table <- plot_vector2 %>%
   rename(c(long.f = V1, lat.f = V2, between.f = V3, closeness.f = V4, eigen.f = V5, degree.f = V6))%>%
-  dplyr::left_join(busstop_information, by =c("long.f"= "Longitude", "lat.f" = "Latitude")) 
+  dplyr::left_join(busstops, by =c("long.f"= "Longitude", "lat.f" = "Latitude")) 
 
 range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 
@@ -217,6 +210,6 @@ map3
 ```
 
 ```{r}
-head(busstop_information,1000)
+head(busstops,1000)
 
 ```
