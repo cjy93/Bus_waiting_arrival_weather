@@ -1,53 +1,26 @@
 ## Library packages 
 
 # Used packages
-pacotes = c("shiny", "shinydashboard",  "plotly", "shinycssloaders","tidyverse",
-            "scales", "kableExtra", "ggfortify","dplyr","plotly","FNN",'flows','sp',
+pacotes = c("shiny", "shinydashboard", "shinythemes", "plotly", "shinycssloaders","tidyverse",
+            "scales", "knitr", "kableExtra", "ggfortify","dplyr","plotly","FNN",'flows','sp',
             'tidyverse','st','sf','maptools','networkD3','gganimate','leaflet','RColorBrewer',
             'dplyr','ggplot2','reshape2','tidyverse','plotly','igraph','ggraph','tidygraph',
-             'lubridate', 'ggmap','visNetwork', 
+            'visNetwork', 'lubridate', 'ggmap','visNetwork', 
             'ggiraph', 'sf', 'tmap','rgdal',
-            'flows','shinycssloaders','heatmaply',
+            'flows','sp','shinycssloaders','heatmaply',
             'MASS','ERSA','car')
             # 
-#pkg removed cos cannot load. "shinythemes"
+
 # Options for Spinner
 options(spinner.color="#0275D8", spinner.color.background="#ffffff", spinner.size=2)
 
-library(shiny)
-library(shinydashboard)
-library(plotly)
-library(shinycssloaders)
-library(tidyverse)
-library(dplyr)
-library(plotly)
-library(FNN)
-library(flows)
-library(sp)
-library(dplyr)
-library(ggplot2)
-library(reshape2)
-library(tidyverse)
-library(igraph)
-library(ggraph)
-library(tidygraph)
-library(lubridate)
-library(sf)
-library(flows)
-library(shinycssloaders)
-library(heatmaply)
-library(MASS)
-library(ERSA)
-library(car)
-library(rgdal)     # R wrapper around GDAL/OGR
-library(ggplot2)   # for general plotting
-library(ggmap)
-
-
-#Load lib
-# https://gist.github.com/RobertMyles/96665be044540e9ac668ee697dac6db7
-# lapply(pacotes, require, character.only = TRUE)
-
+# Run the following command to verify that the required packages are installed. If some package
+# is missing, it will be installed automatically
+package.check <- lapply(pacotes, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+  }
+})
 
 ########################### Data Prep JY #############################
 # passenger volume per busstops
@@ -129,8 +102,8 @@ total$id <- as.character(total$id)
 #data<- read.csv("data/origin_dest_cleaned_jy_subset.csv") 
 
 # Plot Flows diagram
-# mpsz <- readShapeSpatial("data/geospatial/MP14_SUBZONE_WEB_PL.shp") # plot singapore shape
-# mpbus <- readShapeSpatial("data/BusStopLocation_Jan2020/BusStop.shp") # plot busstop
+mpsz <- readShapeSpatial("data/geospatial/MP14_SUBZONE_WEB_PL.shp") # plot singapore shape
+mpbus <- readShapeSpatial("data/BusStopLocation_Jan2020/BusStop.shp") # plot busstop
 
 ## Analysing by Subzones or PA
 SZ <- read_csv("data/subzoneData.csv") %>%
@@ -173,6 +146,40 @@ map_gg4_SZ <- ggplot() + map_gg2_SZ + map_gg3_SZ +geom_point() +
 
 
 
+
+
+#******* VizNetwork*****************
+# # VisNetwork Interactive Graphs
+# #To make my interactive graph have a dropdown menu, they always make us select by id, in my case of `node$id`, it does not show any relevant information. So we have to make tne `node$name` the column of id
+# # Edit Node data to make id = name
+# node_inter <- node %>% 
+#   select(-c("id")) %>%
+#   rename(id = name)
+# 
+# # make the `from` and `to` of edges link to the newly created `id` in `node_inter`
+# edges_inter <- edges_join2 %>%
+#   #select('subzone_ori','subzone_dest') %>%
+#   rename(from =subzone_ori) %>%
+#   rename(to = subzone_dest) %>%
+#   # Group by "from","to" and add the "DAY_TYPE" so we can choose in RShiny
+#   group_by(from,to,DAY_TYPE) %>%
+#   arrange(X1) %>%
+#   # make weights to be according to "TOTAL_TRIPS"
+#   summarise(weight = sum(TOTAL_TRIPS))%>%
+#   filter(weight>1) %>%
+#   ungroup() %>% 
+#   drop_na() 
+# 
+# 
+# #Make sure "weights" is called "value" to invoke weights on flow edges
+# edges_inter <- edges_inter %>%
+#   rename(value = weight)
+# 
+# 
+# #Make sure 'weights' is called 'value' to invoke wights on nodes
+# node_inter <- node_inter %>%
+#   rename(value = weight) %>%
+#   rename(group = district)
 
 
 
