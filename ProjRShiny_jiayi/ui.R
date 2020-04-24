@@ -60,23 +60,8 @@ ui <- dashboardPage(
                             sidebarLayout(
                                 
                                     sidebarPanel(
-                                        h3("Choose type of selection criteria"),
-                                        h4("You can have multiple selection"),
-                                        selectizeInput(
-                                            'district_from', 'From District', choices = busstops$district  , #initialise
-                                            multiple = TRUE,
-                                            options = list(maxItems=10,
-                                                           placeholder = 'Please select one or more options below'
-                                            )
-                                        ), #end of selectizeInput to District from
-                                        selectizeInput(
-                                            'district_to', 'To District', choices = busstops$district  , #initialise
-                                            multiple = TRUE,
-                                            options = list(maxItems=10,
-                                                           placeholder = 'Please select one or more options below'
-                                            )
-                                        ),
-                                        
+                                        helpText("Select passenger flow size"),
+                                        verbatimTextOutput('ex_out'),
                                         # I() indicates it is raw JavaScript code that should be evaluated, instead
                                         # of a normal character string
                                         ## Select dropdown of either filter by Planning Area or Filter by Subzone
@@ -90,7 +75,7 @@ ui <- dashboardPage(
                                                 'pa_from', 'From Planning Area', choices = unique(busstops$planning_area) ,
                                                 multiple = TRUE,
                                                 options = list(maxItems = 10,
-                                                   placeholder = 'Please select one or more options below',selected=busstops$planning_area[1],
+                                                   placeholder = 'Please select one or more options below',
                                                    onInitialize = I('function() { this.setValue(""); }')
                                                 )
                                             ), #end of selectizeInput from Planning Area
@@ -177,7 +162,25 @@ ui <- dashboardPage(
                             #                 label = "Range of interest:",
                             #                 min = 0, max = 100, value = c(0, 100))
                              ), # end of first column 3
-                          
+                          column(4,  
+                                 h3("Choose type of selection criteria"),
+                                 h4("You can have multiple selection"),
+                            selectizeInput(
+                                'district_from', 'From District', choices = "initialisation"  , #initialise
+                                multiple = TRUE,
+                                options = list(maxItems=10,
+                                               placeholder = 'Please select one or more options below',
+                                               onInitialize = I('function() { this.setValue(""); }')
+                                )
+                            ), #end of selectizeInput to District from
+                            selectizeInput(
+                                'district_to', 'To District', choices = "initialisation"  , #initialise
+                                multiple = TRUE,
+                                options = list(maxItems=10,
+                                               placeholder = 'Please select one or more options below',
+                                               onInitialize = I('function() { this.setValue(""); }')
+                                )
+                            )),
                           column(4,
                                  h3("Choose Node weights"),
                                  uiOutput("flowsize_slider_ui"),   ### slider for node weights
@@ -283,70 +286,38 @@ ui <- dashboardPage(
                         
                         sidebarLayout(
                             sidebarPanel(
-                                selectInput("yVar", label = h4("Select dependent variable...."),
-                                            choices = list("Total Tap In Volume" = "frequencyIn", "Total Tap Out Volume" = "frequencyOut"),
-                                            selected = "frequencyIn"),
+                                uiOutput("yVarUI"),
                                 radioButtons("numOfVar", h3("Choose Number of Variables"),
                                              choices = list("2_var" = '2', 
                                                             "4_var" = '4'),selected = '2'),
                                 #switch view to PA
                                 conditionalPanel( condition = "input.numOfVar=='2'", #input.radio == 'PA'
                                                   # if you select planning area, then show this
-                                                  selectizeInput(
-                                                      'select2_1', 'First item', choices = "initialisation"  , #initialise
-                                                      multiple = FALSE,
-                                                      options = list(maxItems=1,
-                                                                     placeholder = 'Please select one or more options below',
-                                                                     onInitialize = I('function() { this.setValue(""); }')
-                                                      )
-                                                  ), #end of selectizeInput to District from
+                                                  selectInput("select21", label = h4("Select box 1"), 
+                                                              choices = list("closeness" = "closeness", "closeness" = "closeness", "degree" = "degree", "between" = "between", "eigen"="eigen"), 
+                                                              selected = "closeness"),
                                                   
-                                                  selectizeInput(
-                                                      'select2_2', 'Second Item', choices = "initialisation"  , #initialise
-                                                      multiple = FALSE,
-                                                      options = list(maxItems=1,
-                                                                     placeholder = 'Please select one or more options below',
-                                                                     onInitialize = I('function() { this.setValue(""); }')
-                                                      )
-                                                  ) #end of selectizeInput to District from
+                                                  selectInput("select22", label = h4("Select box 2"), 
+                                                              choices = list("closeness" = "closeness", "closeness" = "closeness", "degree" = "degree", "between" = "between", "eigen"="eigen"), 
+                                                              selected = "closeness")
                                 ), # end of conditionalPanel
                                 
                                 #switch view to SZ
                                 conditionalPanel( condition = "input.numOfVar=='4'", 
-                                                  selectizeInput(
-                                                      'select4_1', 'First item', choices = "initialisation"  , #initialise
-                                                      multiple = FALSE,
-                                                      options = list(maxItems=1,
-                                                                     placeholder = 'Please select one or more options below',
-                                                                     onInitialize = I('function() { this.setValue(""); }')
-                                                      )
-                                                  ), #end of selectizeInput to District from
+                                                  selectInput("select41", label = h4("Select box 1"), 
+                                                              choices = list("closeness" = "closeness", "closeness" = "closeness", "degree" = "degree", "between" = "between", "eigen"="eigen"), 
+                                                              selected = "closeness"),
                                                   
-                                                  selectizeInput(
-                                                      'select4_2', 'Second Item', choices = "initialisation"  , #initialise
-                                                      multiple = FALSE,
-                                                      options = list(maxItems=1,
-                                                                     placeholder = 'Please select one or more options below',
-                                                                     onInitialize = I('function() { this.setValue(""); }')
-                                                      )
-                                                  ), #end of selectizeInput to District from
-                                                  selectizeInput(
-                                                      'select4_3', 'Third Item', choices = "initialisation"  , #initialise
-                                                      multiple = FALSE,
-                                                      options = list(maxItems=1,
-                                                                     placeholder = 'Please select one or more options below',
-                                                                     onInitialize = I('function() { this.setValue(""); }')
-                                                      )
-                                                  ), #end of selectizeInput to District from
+                                                  selectInput("select42", label = h4("Select box 2"), 
+                                                              choices = list("closeness" = "closeness", "closeness" = "closeness", "degree" = "degree", "between" = "between", "eigen"="eigen"), 
+                                                              selected = "closeness"),
+                                                  selectInput("select43", label = h4("Select box 3"), 
+                                                              choices = list("closeness" = "closeness", "closeness" = "closeness", "degree" = "degree", "between" = "between", "eigen"="eigen"), 
+                                                              selected = "closeness"),
                                                   
-                                                  selectizeInput(
-                                                      'select4_4', 'Fourth Item', choices = "initialisation"  , #initialise
-                                                      multiple = FALSE,
-                                                      options = list(maxItems=1,
-                                                                     placeholder = 'Please select one or more options below',
-                                                                     onInitialize = I('function() { this.setValue(""); }')
-                                                      )
-                                                  ) #end of selectizeInput to District from
+                                                  selectInput("select44", label = h4("Select box 4"), 
+                                                              choices = list("closeness" = "closeness", "closeness" = "closeness", "degree" = "degree", "between" = "between", "eigen"="eigen"), 
+                                                              selected = "closeness")
                                 ), # end of conditionalPanel
                                 selectInput(inputId = "models", 
                                             label = "Choose a variable to display",
@@ -419,7 +390,7 @@ ui <- dashboardPage(
                             ),
                             
                             mainPanel(
-                                plotOutput("AICtest") 
+                                
                             )
                         )
                     )
