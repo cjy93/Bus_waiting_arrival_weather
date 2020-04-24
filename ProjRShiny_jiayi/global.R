@@ -14,13 +14,35 @@ pacotes = c("shiny", "shinydashboard", "shinythemes", "plotly", "shinycssloaders
 # Options for Spinner
 options(spinner.color="#0275D8", spinner.color.background="#ffffff", spinner.size=2)
 
-# Run the following command to verify that the required packages are installed. If some package
-# is missing, it will be installed automatically
-package.check <- lapply(pacotes, FUN = function(x) {
-  if (!require(x, character.only = TRUE)) {
-    install.packages(x, dependencies = TRUE)
-  }
-})
+library(shiny)
+library(shinydashboard)
+library(plotly)
+library(shinycssloaders)
+library(tidyverse)
+library(dplyr)
+library(plotly)
+library(FNN)
+library(flows)
+library(sp)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(tidyverse)
+library(igraph)
+library(ggraph)
+library(tidygraph)
+library(lubridate)
+library(sf)
+library(flows)
+library(shinycssloaders)
+library(heatmaply)
+library(MASS)
+library(ERSA)
+library(car)
+library(rgdal)     # R wrapper around GDAL/OGR
+library(ggplot2)   # for general plotting
+library(ggmap)
+library(stringi)
 
 ########################### Data Prep JY #############################
 # passenger volume per busstops

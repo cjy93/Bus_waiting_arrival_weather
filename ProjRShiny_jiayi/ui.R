@@ -220,29 +220,42 @@ ui <- dashboardPage(
                         
                         sidebarLayout(
                             sidebarPanel(
-                                helpText("Origin Destination Matrix by Absolute numbers"),
+                                h3("Origin Destination Matrix by Absolute numbers"),
                                 # Copy the line below to make a select box 
-                                selectInput("firstflows_ui", label = h3("First Flow Methods"), 
+                                selectInput("firstflows_ui", label = h4("First Flow Methods"), 
                                             choices = list("nfirst" = "nfirst", "xfirst" = "xfirst", "xsumfirst" = "xsumfirst"), 
                                             selected = "xfirst"),
-                                selectInput("kvalue", label = h3("select min flow size"),
-                                            choices = list("10" = 10, "20" = 20, "50" = 50,"100"=100,"200"=200,"500"=500), 
-                                            selected = 10),
-                                helpText("Origin Destination Matrix by flows that represent at least % of the outputs"),
+                                numericInput("kvalue", label = h4("select min flow size for firstflows"), value = 1),
+                                
                                 # Copy the line below to make a select box 
-                                selectInput("firstflows2_ui", label = h3("First Flow Methods"), 
+                                numericInput("kvalue_dom", label = h4("select min flow size for dominance matrix (default k = 1)"), value = 1),
+                                hr(),
+                                hr(),
+                                h3("Origin Destination Matrix by flows that represent at least % of the outputs"),
+                                # Copy the line below to make a select box 
+                                selectInput("firstflows2_ui", label = h4("First Flow Methods"), 
                                             choices = list("nfirst" = "nfirst", "xfirst" = "xfirst"), 
                                             selected = "xfirst"),
-                                selectInput("kvalue2", label = h3("select min flow size"), 
-                                            choices = list( "5" = 0.05 , "10" = 0.10, "20" = 0.20, "50" = 0.50,"90"= 90), 
-                                            selected = 10)
+                                sliderInput("kvalue2", 
+                                            label = h4("select min flow size for firstflows (in %)"),
+                                            min = 0, max = 1, value = 0.05),
+                                numericInput("kvalue2_dom", label = h4("select min flow size for dominance matrix (default k = 1)"), value = 1)
                             ),
                             
                             mainPanel(
-                                helpText("Origin Destination Matrix by Absolute numbers"),
-                                plotlyOutput("ori_dest"),
-                                helpText("Origin Destination Matrix by flows that represent at least % of the outputs"),
-                                plotlyOutput("ori_dest2")
+                                tabsetPanel(
+                                    tabPanel("Flow Select without Dominance",
+                                        helpText("Origin Destination Matrix by Absolute numbers"),
+                                        plotlyOutput("ori_dest"),
+                                        helpText("Origin Destination Matrix by flows that represent at least % of the outputs"),
+                                        plotlyOutput("ori_dest2")), # end of tabPanel "flowSel"
+                                    tabPanel("Flow Select with Dominance",
+                                        helpText("Origin Destination Matrix by Absolute numbers"),
+                                        plotlyOutput("ori_dest_dom"),
+                                        helpText("Origin Destination Matrix by flows that represent at least % of the outputs"),
+                                        plotlyOutput("ori_dest2_dom")) # end of tabPanel "dominance"
+                                
+                                )
                             )
                         )
                     )
@@ -287,38 +300,14 @@ ui <- dashboardPage(
                         sidebarLayout(
                             sidebarPanel(
                                 uiOutput("yVarUI"),
-                                radioButtons("numOfVar", h3("Choose Number of Variables"),
-                                             choices = list("2_var" = '2', 
-                                                            "4_var" = '4'),selected = '2'),
-                                #switch view to PA
-                                conditionalPanel( condition = "input.numOfVar=='2'", #input.radio == 'PA'
-                                                  # if you select planning area, then show this
-                                                  selectInput("select21", label = h4("Select box 1"), 
-                                                              choices = list("closeness" = "closeness", "closeness" = "closeness", "degree" = "degree", "between" = "between", "eigen"="eigen"), 
-                                                              selected = "closeness"),
-                                                  
-                                                  selectInput("select22", label = h4("Select box 2"), 
-                                                              choices = list("closeness" = "closeness", "closeness" = "closeness", "degree" = "degree", "between" = "between", "eigen"="eigen"), 
-                                                              selected = "closeness")
-                                ), # end of conditionalPanel
-                                
-                                #switch view to SZ
-                                conditionalPanel( condition = "input.numOfVar=='4'", 
-                                                  selectInput("select41", label = h4("Select box 1"), 
-                                                              choices = list("closeness" = "closeness", "closeness" = "closeness", "degree" = "degree", "between" = "between", "eigen"="eigen"), 
-                                                              selected = "closeness"),
-                                                  
-                                                  selectInput("select42", label = h4("Select box 2"), 
-                                                              choices = list("closeness" = "closeness", "closeness" = "closeness", "degree" = "degree", "between" = "between", "eigen"="eigen"), 
-                                                              selected = "closeness"),
-                                                  selectInput("select43", label = h4("Select box 3"), 
-                                                              choices = list("closeness" = "closeness", "closeness" = "closeness", "degree" = "degree", "between" = "between", "eigen"="eigen"), 
-                                                              selected = "closeness"),
-                                                  
-                                                  selectInput("select44", label = h4("Select box 4"), 
-                                                              choices = list("closeness" = "closeness", "closeness" = "closeness", "degree" = "degree", "between" = "between", "eigen"="eigen"), 
-                                                              selected = "closeness")
-                                ), # end of conditionalPanel
+                                selectizeInput(
+                                    'selectXvar', 'X variables', choices = "initialisation"  , #initialise
+                                    multiple = TRUE,
+                                    options = list(maxItems=6,  # by the way you only have 4 centrality options
+                                                   placeholder = 'Please select one or more options below',
+                                                   onInitialize = I('function() { this.setValue(""); }')
+                                    )
+                                ),
                                 selectInput(inputId = "models", 
                                             label = "Choose a variable to display",
                                             choices = c("Model1", 
@@ -357,6 +346,7 @@ ui <- dashboardPage(
                                 verbatimTextOutput("conclude3"),
                                 #plottStats("finalCoef")
                                 plotOutput("AIC"),
+                                verbatimTextOutput("seeX"),
                                 h4("In order for our regression model to be more accurate, our group has to check if the assumption of error terms having constant variance is satisfied."),
                                 plotOutput("resid"),
                                 column(6,
