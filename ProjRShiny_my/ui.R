@@ -108,7 +108,7 @@ ui <- dashboardPage(
                                 
                                 conditionalPanel(condition = "input.radio_my1=='SZ'", 
                                                  selectizeInput(
-                                                     'sz_filter_my1', 'SubZone', choices = sort(unique(busstops$subzone_name))
+                                                     'sz_filter_my1', 'SubZone', choices = sort(unique(busstops$subzone_name_my))
                                                  )
                                 ), 
                                 selectInput(inputId = "week_my", 
@@ -158,7 +158,7 @@ ui <- dashboardPage(
                                 
                                 conditionalPanel(condition = "input.radio_my2=='SZ'", 
                                                  selectizeInput(
-                                                     'sz_filter_my_2', 'SubZone', choices = sort(unique(busstops$subzone_name))
+                                                     'sz_filter_my_2', 'SubZone', choices = sort(unique(busstops$subzone_name_my))
                                                  )
                                 ), 
                                 ## 

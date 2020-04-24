@@ -52,7 +52,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(sz_filter_my(), {
-    choices <- sort(unique(sz_filter_my()$subzone_name))
+    choices <- sort(unique(sz_filter_my()$subzone_name_my))
     updateSelectInput(session, "sz_filter_my1", choices = choices) 
   })
   
@@ -72,7 +72,7 @@ server <- function(input, output, session) {
     }
     
     else {
-      location_my %>% dplyr::filter(subzone_name == input$sz_filter_my1)%>% 
+      location_my %>% dplyr::filter(subzone_name_my == input$sz_filter_my1)%>% 
         dplyr::filter(Time == input$time_my)%>%
         dplyr::filter(Day == input$week_my)
 
@@ -111,8 +111,8 @@ server <- function(input, output, session) {
   
   output$tbl_my <- DT::renderDT({
     DT::datatable(
-      location_my_map()[c('PlanningArea', 'subzone_name', 'Day', 'Time', 'Description', 'RoadName', 'TapIns', 'TapOuts')]%>%
-        rename(c(SubzoneName = subzone_name))%>%
+      location_my_map()[c('PlanningArea', 'subzone_name_my', 'Day', 'Time', 'Description', 'RoadName', 'TapIns', 'TapOuts')]%>%
+        rename(c(SubzoneName = subzone_name_my))%>%
         arrange(desc(TapIns)),
       extensions = "Scroller",
       style = "bootstrap",
@@ -147,7 +147,7 @@ server <- function(input, output, session) {
     
     else {
       location_plotly <- location_my %>% 
-        dplyr::filter(subzone_name == input$sz_filter_my1)%>%
+        dplyr::filter(subzone_name_my == input$sz_filter_my1)%>%
         dplyr::filter(Day == input$week_my)%>%
         dplyr::group_by(Time)%>%
         dplyr::summarise(TapIns = sum(TapIns), TapOuts = sum(TapOuts))%>%
@@ -185,7 +185,7 @@ server <- function(input, output, session) {
 
   
   observeEvent(sz_filter_my_2(), {
-    choices <- sort(unique(sz_filter_my_2()$subzone_name))
+    choices <- sort(unique(sz_filter_my_2()$subzone_name_my))
     updateSelectInput(session, "sz_filter_my_2", choices = choices) 
   })
   
@@ -239,25 +239,25 @@ server <- function(input, output, session) {
     }
     
     else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'between_my_filter') {
-      map_table %>% dplyr::filter(subzone_name == input$sz_filter_my_2)%>%
+      map_table %>% dplyr::filter(subzone_name_my == input$sz_filter_my_2)%>%
         dplyr::filter(between.f >= input$centrality_filter[1] & between.f <= input$centrality_filter[2])%>%
         mutate(combined.f = between.f)
     }
     
     else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'closeness_my_filter') {
-      map_table %>% dplyr::filter(subzone_name == input$sz_filter_my_2)%>%
+      map_table %>% dplyr::filter(subzone_name_my == input$sz_filter_my_2)%>%
         dplyr::filter(closeness.f >= input$centrality_filter[1] & closeness.f <= input$centrality_filter[2])%>%
         mutate(combined.f = closeness.f)      
     }
     
     else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'degree_my_filter') {
-      map_table %>% dplyr::filter(subzone_name == input$sz_filter_my_2)%>%
+      map_table %>% dplyr::filter(subzone_name_my == input$sz_filter_my_2)%>%
         dplyr::filter(degree.f >= input$centrality_filter[1] & degree.f <= input$centrality_filter[2])%>%
         mutate(combined.f = degree.f)
     }
     
     else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'eigen_my_filter') {
-      map_table %>% dplyr::filter(subzone_name == input$sz_filter_my_2)%>%
+      map_table %>% dplyr::filter(subzone_name_my == input$sz_filter_my_2)%>%
         dplyr::filter(eigen.f >= input$centrality_filter[1] & eigen.f <= input$centrality_filter[2])%>%
         mutate(combined.f = eigen.f)
     }
@@ -309,28 +309,26 @@ server <- function(input, output, session) {
     }
     
     else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'between_my_filter') {
-      edge_table %>% dplyr::filter(subzone_name == input$sz_filter_my_2)%>%
+      edge_table %>% dplyr::filter(subzone_name_my == input$sz_filter_my_2)%>%
         dplyr::filter(between.f >= input$centrality_filter[1] & between.f <= input$centrality_filter[2])
     }
     
     else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'closeness_my_filter') {
-      edge_table %>% dplyr::filter(subzone_name == input$sz_filter_my_2)%>%
+      edge_table %>% dplyr::filter(subzone_name_my == input$sz_filter_my_2)%>%
         dplyr::filter(closeness.f >= input$centrality_filter[1] & closeness.f <= input$centrality_filter[2])        
     }
     
     else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'degree_my_filter') {
-      edge_table %>% dplyr::filter(subzone_name == input$sz_filter_my_2)%>%
+      edge_table %>% dplyr::filter(subzone_name_my == input$sz_filter_my_2)%>%
         dplyr::filter(degree.f >= input$centrality_filter[1] & degree.f <= input$centrality_filter[2])
     }
     
     else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'eigen_my_filter') {
-      edge_table %>% dplyr::filter(subzone_name == input$sz_filter_my_2)%>%
+      edge_table %>% dplyr::filter(subzone_name_my == input$sz_filter_my_2)%>%
         dplyr::filter(eigen.f >= input$centrality_filter[1] & eigen.f <= input$centrality_filter[2])
     }
   })
   
-  
-
   output$map_my_centrality <- renderLeaflet({
     map_nodes <- my_map_centrality_node()
     map_edges <- my_map_centrality_edge()
@@ -348,18 +346,20 @@ server <- function(input, output, session) {
                    lat2 = 1.32270 - .25)%>%
       fitBounds(minLong,minLat,maxLong,maxLat)
 
+    if (nrow(map_edges) < 500) {
     for(i in 1:nrow(map_edges)){
       map3 <- addPolylines(map3, lat = as.numeric(map_edges[i, c('lat.f', 'lat.t')]), 
                            lng = as.numeric(map_edges[i, c('long.f', 'long.t')]),
-                           weight = 1,
-                           color = 'grey'
+                           weight = 2,
+                           color = 'black'
       )
+    }
     }
     
     for(i in 1:nrow(map_nodes)){
       map3<-addCircleMarkers(map3, lat = as.numeric(map_nodes[i, 'lat.f']), 
                              lng = as.numeric(map_nodes[i,'long.f']),
-                             radius =(log(as.numeric(map_nodes[i, 'combined.f'])+1.05)*30),
+                             radius =(as.numeric(map_nodes[i, 'combined.f'])*13)**1.5,
                              color='black',
                              fillColor = '#FABFD2',
                              weight = 1,

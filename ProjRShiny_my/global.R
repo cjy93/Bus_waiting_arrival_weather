@@ -65,6 +65,7 @@ busstop_volume$BusStopCode <- as.character(busstop_volume$BusStopCode)
 # busstop information
 busstops <- read.csv("data/busstop_lonlat_subzone_District.csv")%>%
   dplyr::filter(planning_area != "Invalid")
+busstops$subzone_name_my <- busstops$subzone_name
 busstops$BusStopCode <- as.integer(busstops$BusStopCode)
 busstops$BusStopCode <- as.character(busstops$BusStopCode)
 busstops$planning_area <- as.character(busstops$planning_area)
@@ -82,34 +83,6 @@ busroute <- busroute[busroute$BusStopCode %in% as.list(unique(busstops['BusStopC
 ## Origin Destination data
 data<- head(read.csv("data/origin_subset_10000.csv"),100)
 
-##################################################### Jia Yi #########################################################
-
-# statistics
-flow <- data %>%
-  select('DAY_TYPE','TIME_PER_HOUR','BusStopCode_x','BusStopCode_y','TOTAL_TRIPS') %>%
-  unite(from_to, BusStopCode_x,BusStopCode_y, sep = "_", remove=FALSE) %>%
-  group_by(from_to) %>% 
-  summarise(Frequency = sum(TOTAL_TRIPS))%>%
-  separate(from_to, c("from", "to"))
-myflows <- prepflows(mat = flow, i = "from", j = "to", fij = "Frequency")
-myflows[1:4,1:4]
-
-## Get statistics about the matrix
-statmat_jy <-  statmat(mat = myflows, output = "none", verbose = TRUE)
-## Plot Lorenz curve only
-lorenz_jy <- statmat(mat = myflows, output = "lorenz", verbose = FALSE)
-## Graphics only
-graphic_jy <- statmat(mat = myflows, output = "all", verbose = FALSE)
-## Statistics only
-mystats <- statmat(mat = myflows, output = "none", verbose = FALSE)
-mystats_jy <- str(mystats)
-## Sum of flows
-sumflow_jy <- mystats$sumflows
-
-# Plot Flows diagram
-#mpsz <- readShapeSpatial("data/geospatial/MP14_SUBZONE_WEB_PL.shp") # plot singapore shape
-#mpbus <- readShapeSpatial("data/BusStopLocation_Jan2020/BusStop.shp") # plot busstop
-
 ##################################################### Mengyong Proportionate symbol map#########################################################
 
 busstop_volume_lat_long_my <- dplyr::inner_join(busstop_volume, busstops, by ='BusStopCode')
@@ -119,7 +92,7 @@ location_my <- busstop_volume_lat_long_my %>%
   rename(c(lat = Latitude, lon = Longitude))
 
 location_my$tap_in_out_radius <- (location_my$TOTAL_TAP_IN_VOLUME + location_my$TOTAL_TAP_OUT_VOLUME)**(1/2)/6
-location_my <- location_my[c('planning_area', 'subzone_name', 'DAY_TYPE', 'TIME_PER_HOUR', 'BusStopCode', 'Description', 'RoadName', 'TOTAL_TAP_IN_VOLUME', 'TOTAL_TAP_OUT_VOLUME', 'lon', 'lat', 'tap_in_out_radius')]%>%
+location_my <- location_my[c('planning_area', 'subzone_name_my', 'DAY_TYPE', 'TIME_PER_HOUR', 'BusStopCode', 'Description', 'RoadName', 'TOTAL_TAP_IN_VOLUME', 'TOTAL_TAP_OUT_VOLUME', 'lon', 'lat', 'tap_in_out_radius')]%>%
   rename(c(Day = DAY_TYPE, TapIns = TOTAL_TAP_IN_VOLUME, TapOuts = TOTAL_TAP_OUT_VOLUME, Time = TIME_PER_HOUR, PlanningArea = planning_area)) %>%
   dplyr::filter(Time >=6 & Time <= 23)
 
@@ -184,14 +157,15 @@ edge_table <- node3 %>%
   rename(c(long.f = V1, lat.f = V2, long.t = V1.1, lat.t = V2.1, between.f = V3, closeness.f = V4, eigen.f = V5, degree.f = V6))%>%
   dplyr::left_join(busstops, by =c("long.f"= "Longitude", "lat.f" = "Latitude")) 
 
-keeps <- c("long.f","lat.f","long.t","lat.t", "planning_area", 'subzone_name', "between.f", "closeness.f", "eigen.f","degree.f" )
+keeps <- c("long.f","lat.f","long.t","lat.t", "planning_area", 'subzone_name_my', "between.f", "closeness.f", "eigen.f","degree.f" )
 edge_table <- edge_table[ , (names(edge_table) %in% keeps)]
 
-range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+#range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+range01 <- function(x) trunc(rank(x))/length(x)
 
 edge_table$between.f <-range01(edge_table$between.f)
 edge_table$closeness.f <-range01(edge_table$closeness.f)
-edge_table$eigen.f <-round(range01(log(edge_table$eigen.f+1)**0.15),3)
+edge_table$eigen.f <-range01(edge_table$eigen.f)
 edge_table$degree.f <-range01(edge_table$degree.f)
 
 # get node table
@@ -201,8 +175,10 @@ map_table <- plot_vector2 %>%
 
 map_table$between.f <-round(range01(map_table$between.f),3)
 map_table$closeness.f <-round(range01(map_table$closeness.f),3)
-map_table$eigen.f <-round(range01(log(map_table$eigen.f+1)**0.15),3)
+map_table$eigen.f <-round(range01(map_table$eigen.f),3)
 map_table$degree.f <-round(range01(map_table$degree.f),3)
 
 #get the radius of the bubbles
 map_table$combined.f = (map_table$between.f*3+1)**(3/4) + (map_table$closeness.f*3+1)**(3/4) + (map_table$eigen.f*3+1)**(3/4) + (map_table$degree.f*3+1)**(3/4)
+
+#write.csv(map_table,"centrality.csv", row.names = FALSE)
