@@ -5,10 +5,8 @@ library(shiny)
 library(tidyverse)
 library(shinydashboard)
 library(flows)
-#library(sp)
 library(maptools)
 library(st)
-#library(sf)
 library(leaflet)
 library(reshape2)
 library(igraph)
@@ -22,37 +20,6 @@ library(plotly)
 library(ggthemes)
 library(dplyr)
 
-# Used packages
-#pacotes = c("shiny", "tidyverse", "shinydashboard",
-#            "dplyr",'flows','sp','maptools',
-#            'tidyverse','st','sf','leaflet',
-#            'dplyr','ggplot2','reshape2','tidyverse', 'igraph','ggraph','tidygraph',
-#            'ggmap', 'tmap',
-#            'flows','sp'
-#)
-
-## removed packages
-# "shinythemes", "plotly", "shinycssloaders", 
-#"scales", "knitr", "kableExtra", "ggfortify",
-#,'networkD3','gganimate',
-#'RColorBrewer',
-#'plotly',
-#'visNetwork', 'lubridate', 
-#'visNetwork', 
-#'ggiraph',
-#'#, 'geosphere'
-#'#   ,'leaflet.extras'
-#'#,"plotly","FNN"
-
-
-
-# Run the following command to verify that the required packages are installed. If some package
-# is missing, it will be installed automatically
-#package.check <- lapply(pacotes, FUN = function(x) {
-#  if (!require(x, character.only = TRUE)) {
-#    install.packages(x, dependencies = TRUE)
-#  }
-#})
 
 ##################################################### Import data here #########################################################
 
@@ -81,7 +48,6 @@ busroute <- busroute[c('BusStopCode', 'Direction', 'Distance', 'ServiceNo', 'Sto
 busroute <- busroute[busroute$BusStopCode %in% as.list(unique(busstops['BusStopCode']))[['BusStopCode']], ] 
 
 ## Origin Destination data
-data<- head(read.csv("data/origin_subset_10000.csv"),100)
 
 ##################################################### Mengyong Proportionate symbol map#########################################################
 
@@ -91,14 +57,14 @@ location_my <- busstop_volume_lat_long_my %>%
   dplyr::arrange(desc(BusStopCode))%>%
   rename(c(lat = Latitude, lon = Longitude))
 
-location_my$tap_in_out_radius <- (location_my$TOTAL_TAP_IN_VOLUME + location_my$TOTAL_TAP_OUT_VOLUME)**(1/2)/6
-location_my <- location_my[c('planning_area', 'subzone_name_my', 'DAY_TYPE', 'TIME_PER_HOUR', 'BusStopCode', 'Description', 'RoadName', 'TOTAL_TAP_IN_VOLUME', 'TOTAL_TAP_OUT_VOLUME', 'lon', 'lat', 'tap_in_out_radius')]%>%
+#location_my$tap_in_out_radius <- (location_my$TOTAL_TAP_IN_VOLUME + location_my$TOTAL_TAP_OUT_VOLUME)**(1/2)/6
+location_my <- location_my[c('planning_area', 'subzone_name_my', 'DAY_TYPE', 'TIME_PER_HOUR', 'BusStopCode', 'Description', 'RoadName', 'TOTAL_TAP_IN_VOLUME', 'TOTAL_TAP_OUT_VOLUME', 'lon', 'lat')]%>%
   rename(c(Day = DAY_TYPE, TapIns = TOTAL_TAP_IN_VOLUME, TapOuts = TOTAL_TAP_OUT_VOLUME, Time = TIME_PER_HOUR, PlanningArea = planning_area)) %>%
   dplyr::filter(Time >=6 & Time <= 23)
 
 planning_area_list_my <-sort(unique(location_my$PlanningArea))
 
-pal <- colorNumeric(palette = "RdPu", domain = location_my$tap_in_out_radius)
+#pal <- colorNumeric(palette = "RdPu", domain = location_my$TapIns*2)
 
 ##################################################### Mengyong Centrality#########################################################
 
@@ -178,7 +144,7 @@ map_table$closeness.f <-round(range01(map_table$closeness.f),3)
 map_table$eigen.f <-round(range01(map_table$eigen.f),3)
 map_table$degree.f <-round(range01(map_table$degree.f),3)
 
+#write.csv(map_table,"Path where you'd like to export the DataFrame\\File Name.csv", row.names = FALSE)
+
 #get the radius of the bubbles
 map_table$combined.f = (map_table$between.f*3+1)**(3/4) + (map_table$closeness.f*3+1)**(3/4) + (map_table$eigen.f*3+1)**(3/4) + (map_table$degree.f*3+1)**(3/4)
-
-#write.csv(map_table,"centrality.csv", row.names = FALSE)

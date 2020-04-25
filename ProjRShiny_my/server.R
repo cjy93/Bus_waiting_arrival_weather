@@ -52,31 +52,55 @@ server <- function(input, output, session) {
   })
   
   observeEvent(sz_filter_my(), {
-    choices <- sort(unique(sz_filter_my()$subzone_name_my))
+    choices <- sort(unique(sz_filter_my()$subzone_name))
     updateSelectInput(session, "sz_filter_my1", choices = choices) 
   })
   
   
   location_my_map <- reactive({
     
-    if (input$radio_my1 == 'SG') {
+    if (input$radio_my1 == 'SG' & input$radio_my_taps == 'tap_ins') {
       location_my %>%
         dplyr::filter(Time == input$time_my)%>%
-        dplyr::filter(Day == input$week_my)
+        dplyr::filter(Day == input$week_my)%>%
+        mutate(taps = TapIns)
     }
     
-    else if (input$radio_my1 == 'PA') {
+    else if (input$radio_my1 == 'SG' & input$radio_my_taps == 'tap_outs') {
+      location_my %>%
+        dplyr::filter(Time == input$time_my)%>%
+        dplyr::filter(Day == input$week_my)%>%
+        mutate(taps = TapOuts)
+    }
+    
+    else if (input$radio_my1 == 'PA'& input$radio_my_taps == 'tap_ins') {
       location_my %>% dplyr::filter(PlanningArea == input$pa_my_1)%>% 
         dplyr::filter(Time == input$time_my)%>%
-        dplyr::filter(Day == input$week_my)
+        dplyr::filter(Day == input$week_my)%>%
+        mutate(taps = TapIns)
     }
-    
-    else {
+
+    else if (input$radio_my1 == 'PA'& input$radio_my_taps == 'tap_outs') {
+      location_my %>% dplyr::filter(PlanningArea == input$pa_my_1)%>% 
+        dplyr::filter(Time == input$time_my)%>%
+        dplyr::filter(Day == input$week_my)%>%
+        mutate(taps = TapOuts)
+    }
+        
+    else if (input$radio_my1 == 'SZ'& input$radio_my_taps == 'tap_ins'){
       location_my %>% dplyr::filter(subzone_name_my == input$sz_filter_my1)%>% 
         dplyr::filter(Time == input$time_my)%>%
-        dplyr::filter(Day == input$week_my)
-
+        dplyr::filter(Day == input$week_my)%>%
+        mutate(taps = TapIns)
     }
+    
+    else if (input$radio_my1 == 'SZ'& input$radio_my_taps == 'tap_outs'){
+      location_my %>% dplyr::filter(subzone_name_my == input$sz_filter_my1)%>% 
+        dplyr::filter(Time == input$time_my)%>%
+        dplyr::filter(Day == input$week_my)%>%
+        mutate(taps = TapOuts)
+    }   
+    
   })
   
   output$map_my <- renderLeaflet({
@@ -87,6 +111,7 @@ server <- function(input, output, session) {
     minLat1 <- min(map_data$lat)
     minLong1 <- min(map_data$lon)
 
+    pal <- colorNumeric(palette = "RdPu", domain = map_data$taps**(1/2)/6)
     
     map_data %>% leaflet()%>%
       addProviderTiles("CartoDB") %>% 
@@ -94,13 +119,14 @@ server <- function(input, output, session) {
 
       addCircleMarkers(lng = ~lon, 
                        lat = ~lat,
-                       radius = ~tap_in_out_radius/1.5,
+                       radius = ~taps**(1/2)/6,
                        fillOpacity = 0.5,
                        label = ~Description, 
-                       popup = ~paste0("<b>", Description, "</b>", "<br/>", 'Tap in Volume: ', TapIns, "<br/>", 'Tap out volume: ', TapOuts),
+                       popup = ~paste0("<b>", Description, "</b>", "<br/>", 'Planning Area: ', PlanningArea, "<br/>", 'Subzone: ', subzone_name_my, "<br/>", 'Tap in Volume: ', TapIns, "<br/>", 'Tap out volume: ', TapOuts),
                        color = 'black',
                        weight = 0.5,
-                       fillColor = ~pal(tap_in_out_radius)
+                       fillColor = ~pal(taps**(1/2)/6)
+                       #fillColor = '#FABFD2'
       ) %>%
       setMaxBounds(lng1 = 103.801959 + .25, 
                    lat1 = 1.32270 + .25, 
@@ -338,6 +364,8 @@ server <- function(input, output, session) {
     minLat <- min(map_nodes$lat.f)
     minLong <- min(map_nodes$long.f)
     
+    pal2 <- colorNumeric(palette = "RdPu", domain =c(0,1))
+    
     map3 <- map_nodes %>% leaflet()%>%
       addProviderTiles("CartoDB") %>% 
       setMaxBounds(lng1 = 103.801959 + .25, 
@@ -359,9 +387,10 @@ server <- function(input, output, session) {
     for(i in 1:nrow(map_nodes)){
       map3<-addCircleMarkers(map3, lat = as.numeric(map_nodes[i, 'lat.f']), 
                              lng = as.numeric(map_nodes[i,'long.f']),
-                             radius =(as.numeric(map_nodes[i, 'combined.f'])*13)**1.5,
+                             radius =(as.numeric(map_nodes[i, 'combined.f'])*8)**1.6,
                              color='black',
-                             fillColor = '#FABFD2',
+                             #fillColor = '#FABFD2',
+                             fillColor = ~pal2(map_nodes[i, 'combined.f']**3),
                              weight = 1,
                              fillOpacity = 0.5,
                              label = map_nodes[i,'id.Description'],

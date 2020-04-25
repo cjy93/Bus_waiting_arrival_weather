@@ -12,7 +12,7 @@ ui <- dashboardPage(
                                  menuItem('Home', tabName = 'Home', icon=icon("home")),
                                  menuItem('Flow', tabName = 'Flow_Diagrams', icon = icon("bus")),
                                  menuItem('Passenger Volume', tabName = 'Passenger_volume', icon = icon("connectdevelop")),
-                                 menuItem('Busstop Centrality', tabName = 'Centrality', icon = icon("globe")),
+                                 menuItem('Bus Stop Centrality', tabName = 'Centrality', icon = icon("globe")),
                                  menuItem('GravityModel', tabName = 'Gravity_Model', icon = icon("chart-line")),
                                  menuItem('Download', tabName = 'Download', icon = icon("download"))# tabs are here!
                      )
@@ -25,7 +25,8 @@ ui <- dashboardPage(
                         # titlePanel("Home"),
                         fluidRow(
                             column(12,
-                                   img(src = "SBS-Transit-bus-5.jpg", height = 300),
+                                   img(src = "Group_logo1.png", height = 250),
+                                  
                                    h1('Re-imaginging Bus Transport Network in Singapore'),
                                    p("Singapore's public transport use rose to hit a record high in 2018, with a total of 7.54 million trips made on buses or trains each day."),
                                    p("Here's what may come across your mind: Do you ever have experiences where a bus ride that is supposed to be short and quick took way longer 
@@ -65,7 +66,7 @@ ui <- dashboardPage(
                         titlePanel("Flow Maps"),
                         
                         sidebarLayout(
-                            sidebarPanel(
+                            sidebarPanel(width = 2,
                                 helpText("Select passenger flow size"),
                                 
                                 selectInput("flow_input", 
@@ -105,12 +106,14 @@ ui <- dashboardPage(
                                                      selected = 'Ang Mo Kio'
                                                  )
                                 ), 
-                                
                                 conditionalPanel(condition = "input.radio_my1=='SZ'", 
                                                  selectizeInput(
                                                      'sz_filter_my1', 'SubZone', choices = sort(unique(busstops$subzone_name_my))
                                                  )
                                 ), 
+                                radioButtons("radio_my_taps", h3("Tap Ins / Tap Outs"),
+                                             choices = list("Tap Ins" = "tap_ins", 
+                                                            "Tap Outs" = 'tap_outs'), selected = 'tap_ins'),
                                 selectInput(inputId = "week_my", 
                                             label = "Weekday / Weekend",
                                             choices = c('Weekday' = 'WEEKDAY',
@@ -126,7 +129,7 @@ ui <- dashboardPage(
                             ),
                             
                             mainPanel(
-                                leafletOutput("map_my", height = 800),                                   
+                                leafletOutput("map_my", height = 700),                                   
                                 br(),
                                 plotlyOutput("trendPlot_my", , height = 400),                                 
                                 br(),
