@@ -13,6 +13,7 @@ ui <- dashboardPage(
                                  menuItem('Flow', tabName = 'Flow_Diagrams', icon = icon("bus"),startExpanded= TRUE,
                                     menuSubItem("Aggregation Filters", tabName = "Aggregation_Filters"),
                                     menuSubItem("Flow Map", tabName = "Flow_Map"),
+                                    menuSubItem("Trip Generator and Receiver", tabName = "flow_Bar_Graph"),
                                     menuSubItem("Origin-Destination Matrix", tabName = "Origin-Destination")),
                                  menuItem('Proportional Symbol_Map', tabName = 'ProportionalSymbolMap_Diagrams', icon = icon("connectdevelop")),
                                  menuItem('Centrality', tabName = 'Centrality', icon = icon("globe")),
@@ -56,6 +57,7 @@ ui <- dashboardPage(
 
                         titlePanel("Aggregation Filters"),
                         fluidRow(
+                            
 
                             sidebarLayout(
                                 
@@ -133,9 +135,9 @@ ui <- dashboardPage(
                     fluidPage(
                         title = "Flow Maps",
                         #titlePanel("Flow Maps"),
-                        h1("Flow Maps"),
-                        h3("For filtering of Planning Area OR Subzone:"),
-                        h5("Please filter them at 'Aggregate Filter' tab"),
+                        # h1("Flow Maps"),
+                        # h3("For filtering of Planning Area OR Subzone:"),
+                        h5("For filtering of Planning Area OR Subzone:Please filter them at 'Aggregate Filter' tab"),
                         #plotlyOutput("map_jy"),
                         plotOutput("map_jy"),
                         hr(),
@@ -145,26 +147,32 @@ ui <- dashboardPage(
                         hr(),
                         hr(),
                         hr(),
+                        hr(), hr(),hr(),hr(),
                         hr(),
+                        
                         fluidRow(
                           column(4,  
                             #helpText("Select passenger flow size"),
-                            radioButtons("radio_flowsize", h3("Choose edge type and edge weight"),
-                                         choices = list("By Passenger Volume" = 'passenger', 
-                                                        "By Number of Bus Services" = 'bus'),selected = 'passenger'),
+                            div(style="height: 10px;"),
+                            # radioButtons("radio_flowsize", h4("Choose edge type and edge weight"),
+                            #              choices = list("By Passenger Volume" = 'passenger', 
+                            #                             "By Number of Bus Services" = 'bus'),selected = 'passenger'),
                             
                            
-                            conditionalPanel( condition = "input.radio_flowsize=='passenger'",
+                            # conditionalPanel( condition = "input.radio_flowsize=='passenger'",
+                            h4("Choose weight of edges (By Total Trips"), 
+                            conditionalPanel( condition = TRUE,
                                 uiOutput("flowEdge_slider_ui_passenger")   ### slider for node weights
                                 )
                             # conditionalPanel( condition = "input.radio_flowsize=='bus'", 
                             #     sliderInput("busstopNetworksize", 
                             #                 label = "Range of interest:",
                             #                 min = 0, max = 100, value = c(0, 100))
+                             # end of div for height control
                              ), # end of first column 3
                           column(4,  
-                                 h3("Choose type of selection criteria"),
-                                 h4("You can have multiple selection"),
+                                 h4("Choose type of selection criteria"),
+                                 h5("You can have multiple selection"),
                             selectizeInput(
                                 'district_from', 'From District', choices = "initialisation"  , #initialise
                                 multiple = TRUE,
@@ -182,14 +190,14 @@ ui <- dashboardPage(
                                 )
                             )),
                           column(4,
-                                 h3("Choose Node weights"),
+                                 h4("Choose Node weights"),
                                  uiOutput("flowsize_slider_ui"),   ### slider for node weights
                                  #sliderInput("flowsize", 
                                  #            label = "Range of interest:",
                                  #            min = 0, max = 100000, value = c(0, 100))
                                  
                                  checkboxGroupInput("checkGroup", 
-                                                    h3("Type of Day"), 
+                                                    h4("Type of Day"), 
                                                     choices = list("Weekdays" = "WEEKDAY", 
                                                                    "Weekends/Holidays" = "WEEKENDS/HOLIDAY"),
                                                     selected = c("WEEKDAY","WEEKENDS/HOLIDAY")) # end of select input for day type
@@ -213,6 +221,22 @@ ui <- dashboardPage(
                     ) # end of fluidPage
             ), #end of tabname "flowMap"  
             
+            tabItem(tabName = 'flow_Bar_Graph',
+                    fluidPage(
+                        titlePanel("Trip Generator and Receiver"),
+                        
+                        sidebarLayout(
+                            sidebarPanel(
+                                
+                                
+                            ),
+                            
+                            mainPanel(
+                                sankeyNetworkOutput("sankey_from")
+                            )
+                        )
+                    )
+            ), #end of tabname "flow_Bar_Graph" 
             
             tabItem(tabName = 'Origin-Destination',
                     fluidPage(

@@ -43,6 +43,7 @@ library(rgdal)     # R wrapper around GDAL/OGR
 library(ggplot2)   # for general plotting
 library(ggmap)
 library(stringi)
+library(networkD3)
 
 ########################### Data Prep JY #############################
 # passenger volume per busstops
@@ -157,7 +158,7 @@ map_gg2_SZ <- geom_polygon(data = shapefile_df_SZ,
                         color = 'gray', fill = 'gray', size = .2) 
 map_gg3_SZ <- geom_path(data = shapefile_df_SZ, 
                      aes(x = long, y = lat, group = group),
-                     color = 'red', fill = 'red', size = .2)
+                     color = 'blue', fill = '#FBE2C8', size = .2)
 map_gg4_SZ <- ggplot() + map_gg2_SZ + map_gg3_SZ +geom_point() +
   annotate("point", x = 31596, y = 29220, colour = "blue")
 

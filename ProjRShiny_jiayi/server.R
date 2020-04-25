@@ -25,18 +25,22 @@ server <- function(input, output, session) {
         # Now inner join the 2 tables so i can find the weights
         node_pa <- dplyr::inner_join(busstops, PA, by= 'planning_area') %>%
           dplyr::select(c('OBJECTID','district','planning_area','X_ADDR','Y_ADDR'))%>%
-          group_by(OBJECTID,planning_area,district,X_ADDR,Y_ADDR) %>%  
+          group_by(OBJECTID,planning_area,X_ADDR,Y_ADDR) %>%  
           summarise(weight = n()) %>%
           filter(weight > 1) %>%
           ungroup()  %>%
           rename(id = OBJECTID) %>%
           rename(name = planning_area)%>%
           rename(x = X_ADDR) %>%
-          rename(y = Y_ADDR) %>%
-          mutate(district= toupper(district))%>%
-          mutate(id = as.character(id))
+          rename(y = Y_ADDR) 
         
-        node_pa
+        node_pa2 <- merge(node_pa, PA,by.x = "name", by.y="planning_area") %>%
+          dplyr::select(c("id","name", "REGION_N", "x", "y","weight")) %>%
+          rename(district=REGION_N)%>% mutate(id = as.character(id))
+        
+        #%>%
+        #mutate(district= toupper(district))
+        node_pa2
         
       }
       else{
@@ -592,7 +596,10 @@ server <- function(input, output, session) {
 	# ShapeFile for SZ
     # First read in the shapefile, using the path to the shapefile and the shapefile name minus the
     # extension as arguments
-    shapefile <- readOGR("data/geospatial", "MP14_SUBZONE_WEB_PL")
+    if(input$radio == 'PA'){
+      shapefile <- readOGR("data/geospatial", "MP14_PLNG_AREA_WEB_PL")
+    }else{
+      shapefile <- readOGR("data/geospatial", "MP14_SUBZONE_WEB_PL")}
     
     # Next the shapefile has to be converted to a dataframe for use in ggplot2
     shapefile_df <- fortify(shapefile)
@@ -605,7 +612,7 @@ server <- function(input, output, session) {
                                color = 'gray', fill = 'gray', size = .2) 
     map_gg3 <- geom_path(data = shapefile_df, 
                             aes(x = long, y = lat, group = group),
-                            color = 'red', fill = 'red', size = .2)
+                            color = 'purple', fill = 'purple', size = .2)
     map_gg4 <- ggplot() + map_gg2 + map_gg3 +geom_point() +
       annotate("point", x = 31596, y = 29220, colour = "blue")
     
@@ -626,7 +633,7 @@ server <- function(input, output, session) {
         maptheme
     
         plot(map_jy)
-    }, height = 600, width = 1600) # 
+    },height = 700, width = 1450) # end of output$map_jy 
     
     # create slider widget based on size of the node flows
     output$flowsize_slider_ui <- renderUI({
@@ -641,9 +648,154 @@ server <- function(input, output, session) {
                   label = "Range of interest for edge weights:",
                   min = min(edges_for_plot4_reactive()$weight), max = max(edges_for_plot4_reactive()$weight), value = c(min(edges_for_plot4_reactive()$weight), max(edges_for_plot4_reactive()$weight)))
     })
+  ########################################### Sankey Diagram Jia Yi #####################################################
+   node_from <- reactive({ if(input$radio == 'PA'){
+     node() %>% filter(name %in% input$pa_from)
+   } else {
+     node() %>% filter(name %in% input$sz_from)
+   }   }) # end of edge_from
 
+    node_to <- reactive({ if(input$radio == 'PA'){
+      input$pa_to
+   } else {
+     input$sz_to
+   }})
+
+
+    sankey_fn_node <- reactive({
+      print('sankey_fn')
+      print(input$radio)
+      print('edge pa in pa_to')
+      print(input$pa_to)
+      #edge_id2_local <- edge_id2()
+      #print('edge_id2_local')
+      #print(edge_id2_local)
+      #print(edges_data$planning_area.x %in% input$pa_from)
+      if (input$radio == 'PA' ){
+        node_local_from = node() %>% filter(name %in% input$pa_from ) %>% dplyr:: select('name')
+        node_local_to = node() %>% filter(name %in% input$pa_to ) %>% dplyr:: select('name')
+        #print("node_id_from")
+        #print(node_id_local)
+        print("namevec")
+        #print(node_local_from$name)
+        #print(node_local_to$name)
+        name_vec <- c(unique(node_local_from$name, node_local_to$name))
+        print(name_vec)
+        
+      } else if (input$radio == 'SZ' ){
+        node_local_from = node() %>% filter(name %in% input$sz_from ) %>% dplyr:: select('name')
+        node_local_to = node() %>% filter(name %in% input$sz_to ) %>% dplyr:: select('name')
+        #print("node_id_from")
+        #print(node_id_local)
+        print("namevec")
+        name_vec <- c(unique(node_local_from$name, node_local_to$name))
+        print(name_vec)
+      }
+      nodes_sank <- data.frame(name = name_vec, id = 0:length(name_vec)) %>%
+        mutate(id = as.numeric(id))
+      
+      #print('edges_sankey')
+      #print(edges_sankey)
+      #print('nodes_from()')
+      #print(node_from())
+      # from sankey
+      print('sankey_fn_node')
+      print(class(nodes_sank))
+      nodes_sank
+    })
     
-    ############################## HeatMap Jiayi ####################################
+    sankey_fn_edge <- reactive({
+      if (input$radio == 'PA'){
+      sank_edge <- edges_data %>%
+      left_join(sankey_fn_node(),edge_data, by=c('planning_area.x'='name')) %>%
+      rename(from_id = id) %>%
+      left_join(sankey_fn_node(),edge_data, by=c('planning_area.y'='name')) %>%
+      rename(to_id = id)
+      }
+      else if (input$radio == 'SZ'){
+        sank_edge <- edges_data %>%
+          left_join(sankey_fn_node(),edge_data, by=c('subzone_origin'='name')) %>%
+          rename(from_id = id) %>%
+          left_join(sankey_fn_node(),edge_data, by=c('subzone_destination'='name')) %>%
+          rename(to_id = id)
+      }
+      sank_edge
+      
+    })
+   # filter the edges available given the selected inputs
+   # sankey_fn_edge <- reactive({
+   #   print('sankey_fn')
+   #   print(input$radio)
+   #   print('edge pa in pa_to')
+   #   print(input$pa_to)
+   #   #edge_id2_local <- edge_id2()
+   #   #print('edge_id2_local')
+   #   #print(edge_id2_local)
+   #   #print(edges_data$planning_area.x %in% input$pa_from)
+   # if (input$radio == 'PA' ){
+   #   node_local_from = node() %>% filter(name %in% input$pa_from ) %>% dplyr:: select('name')
+   #   node_local_to = node() %>% filter(name %in% input$pa_to ) %>% dplyr:: select('name')
+   #   #print("node_id_from")
+   #   #print(node_id_local)
+   #   edges_sankey <- edges_data %>% filter(planning_area.x %in% node_local_from)%>%
+   #     filter(planning_area.y %in% node_local_to)
+   # 
+   # } else if (input$radio == 'SZ' ){
+   #   node_local_from = node() %>% filter(name %in% input$sz_from ) %>% dplyr:: select('name')
+   #   node_local_to = node() %>% filter(name %in% input$sz_to ) %>% dplyr:: select('name')
+   #   #print("node_id_from")
+   #   #print(node_id_local)
+   #   edges_sankey <- edges_data %>% filter(planning_area.x %in% node_local_from)%>%
+   #     filter(planning_area.y %in% node_local_to)
+   # }
+   #   # aggregate each pair of edges
+   #   edges_sankey_id <- edges_sankey  %>%
+   #     
+   #   edges_sankey_agg <- edges_sankey_id %>% dplyr::group_by(from,to) %>% summarise(weight = sum(weight))
+   # print('sankey_fn_edge')
+   # print(edges_sankey_agg)
+   # #print('nodes_from()')
+   # #print(node_from())
+   # # from sankey
+
+   # edges_sankey_agg
+   # print("classEdgessakey")
+   # print(class(edges_sankey_agg))
+   
+   #sankey <- htmlwidgets::prependContent(sankey, htmltools::tags$h1("Interactive Sankey flow Origin to Destination by PA"))
+   #print('sankey')
+   #print(sankey)
+   #sankey
+   output$sankey_from <- renderSankeyNetwork({
+     sankeyNetwork(Links = sankey_fn_edge(), Nodes = sankey_fn_node(), Source = 'from_id', Target = 'to_id',
+                                                     Value = 'weight', NodeID = 'name', fontSize = 16)
+
+   })
+   
+
+
+    # # URL <- paste0(
+    # #   "https://cdn.rawgit.com/christophergandrud/networkD3/",
+    # #   "master/JSONdata/energy.json")
+    # # Energy <- jsonlite::fromJSON(URL)
+    # # # Plot
+    # # sankeyNetwork(Links = Energy$links, Nodes = Energy$nodes, Source = "source",
+    # #               Target = "target", Value = "value", NodeID = "name",
+    # #               units = "TWh", fontSize = 12, nodeWidth = 30)
+
+    # output$sankey_from <- renderSankeyNetwork({
+    #   sankeyNetwork(Links = sankey_fn_edge(), Nodes = node(), Source = 'from', Target = 'to',
+    #                                                   Value = 'weight', NodeID = 'id', fontSize = 16)
+    # 
+    #   #a <- sankey_fn()
+    #   #sankeyNetwork(sankey_fn())
+    # 
+    # sankeyNetwork(Links = Energy$links, Nodes = Energy$nodes, Source = "source",
+    #               Target = "target", Value = "value", NodeID = "name",
+    #               units = "TWh", fontSize = 12, nodeWidth = 30)
+    #})
+    # to sankey
+    ######################################### HeatMap Jiayi ####################################
     ## Preparing the Origin Destination matrix to be in the form "from","to","frequency"
     flow_ori_dest <- reactive({
       if(is.null(edge_id2_filtered_reactive())==FALSE ){ # & (input$radio=="SZ")
