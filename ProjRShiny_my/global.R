@@ -20,7 +20,7 @@ library(plotly)
 library(ggthemes)
 library(dplyr)
 
-
+suppressWarnings(as.numeric(c("1", "2", "X")))
 ##################################################### Import data here #########################################################
 
 # busstop volume

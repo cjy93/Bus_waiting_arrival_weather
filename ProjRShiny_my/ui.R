@@ -82,8 +82,8 @@ ui <- dashboardPage(
                             ),
                             
                             mainPanel(
-                                verbatimTextOutput("flow_jy"),
-                                plotOutput("ploygon_jy")
+                               # verbatimTextOutput("flow_jy"),
+                            #    plotOutput("ploygon_jy")
 
                             )
                         )
