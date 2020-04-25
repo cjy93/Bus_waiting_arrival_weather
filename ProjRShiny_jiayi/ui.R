@@ -62,8 +62,8 @@ ui <- dashboardPage(
                             sidebarLayout(
                                 
                                     sidebarPanel(
-                                        #helpText("Select passenger flow size"),
-                                        #verbatimTextOutput('ex_out'),
+                                        # helpText("Select passenger flow size"),
+                                        # verbatimTextOutput('ex_out'),
                                         # I() indicates it is raw JavaScript code that should be evaluated, instead
                                         # of a normal character string
                                         ## Select dropdown of either filter by Planning Area or Filter by Subzone
@@ -223,7 +223,7 @@ ui <- dashboardPage(
             
             tabItem(tabName = 'flow_Bar_Graph',
                     fluidPage(
-                        title = "Trip Generator and Receiver",
+                       title = "Trip Generator and Receiver",
                         h3("Trip Generator and Receiver"),
                                 h4("To aggregate by Planning Area or Subzones:"),
                                 h5("Please filter at 'Aggregate Filter' Tab"),
@@ -335,7 +335,7 @@ ui <- dashboardPage(
                                 
                             ),
                             
-                            # https://dss.princeton.edu/online_help/analysis/interpreting_regression.htm
+ # https://dss.princeton.edu/online_help/analysis/interpreting_regression.htm
                             mainPanel(
                                 tabsetPanel(
                                     tabPanel("Regression Model",

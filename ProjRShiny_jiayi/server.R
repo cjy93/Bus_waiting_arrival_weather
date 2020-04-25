@@ -146,12 +146,12 @@ server <- function(input, output, session) {
     
  # not to delete this is dummy test 
     
-    output$ex_out <- reactive({
-        str(c(input$radio,input$pa_from, input$pa_to, input$sz_from, input$sz_to)
-        )
-    })
-    
-    outputOptions(output, "ex_out", suspendWhenHidden = FALSE)      
+    # output$ex_out <- reactive({
+    #     str(c(input$radio,input$pa_from, input$pa_to, input$sz_from, input$sz_to)
+    #     )
+    # })
+    # 
+    # outputOptions(output, "ex_out", suspendWhenHidden = FALSE)      
     
   
     
@@ -760,19 +760,19 @@ server <- function(input, output, session) {
           filter(subzone_destination %in% input$sz_to) 
         #sank_left   # left edge
       }
-
+      
       print("sankleft")
       print(sank_left)
       sank_left
     })
-
+  
    output$sankey_from <- renderSankeyNetwork({
      sankeyNetwork(Links = sankey_fn_edge(), Nodes = sankey_fn_node(), Source = 'from_id', Target = 'to_id',
                                                      Value = 'weight', NodeID = 'name', fontSize = 16)
 
    })
    
-   #https://christophergandrud.github.io/networkD3/
+    #https://christophergandrud.github.io/networkD3/
     # to sankey
     ######################################### HeatMap Jiayi ####################################
     ## Preparing the Origin Destination matrix to be in the form "from","to","frequency"
@@ -1103,7 +1103,7 @@ server <- function(input, output, session) {
           )
         }
       })
-    ############################################ Gravity Model Jia Yi #######################################################
+    ############################################ Gravity Model Jia Yi #############################################
     # For X variable selections
     selectX <- c("closeness","between","degree","eigen")
     
@@ -1126,7 +1126,7 @@ server <- function(input, output, session) {
      
      
      # reactive linear model inputs from y and x from UI
-     linear1 <- reactive({
+	linear1 <- reactive({
        if (is.null(input$selectXvar)==FALSE && is.null(input$yVar)==FALSE){
          print("input$selectXvar")
          print(input$selectXvar)
@@ -1139,7 +1139,6 @@ server <- function(input, output, session) {
          fml = as.formula(sprintf('%s ~ %s ', input$yVar, lis_new))
          fit = lm(fml, data=pass_central)
          fit}})
-     
      modelInOut = reactive({
        if (is.null(input$selectXvar)==FALSE && is.null(input$yVar)==FALSE){
        print("input$selectXvar")
@@ -1184,7 +1183,7 @@ server <- function(input, output, session) {
                   selected = "frequencyIn")})
     # if only 2 element
     
-    
+   
     #Plot the t statistics based on the y and x variable inputs
     output$AIC <- renderPlotly({
       plottStats(modelInOut())
@@ -1196,8 +1195,7 @@ server <- function(input, output, session) {
     #input$newplot
 
     # texts output
-    
-    observe({
+     observe({
       print("class linear")
       print(linear1())
       print("end of class linear")})
@@ -1211,10 +1209,11 @@ server <- function(input, output, session) {
 
 
 
+
+
     output$conclude1 <- renderPrint({
       if(as.numeric(anova(modelInOut())$'Pr(>F)'[1])<1-input$num){
         'Statistically Significant. Reject H0'}
-      
       else {
         'Statistically not significant. Do not reject H0'
       }

@@ -125,8 +125,8 @@ total$id <- as.character(total$id)
 #data<- read.csv("data/origin_dest_cleaned_jy_subset.csv") 
 
 # Plot Flows diagram
-mpsz <- readShapeSpatial("data/geospatial/MP14_SUBZONE_WEB_PL.shp") # plot singapore shape
-mpbus <- readShapeSpatial("data/BusStopLocation_Jan2020/BusStop.shp") # plot busstop
+#mpsz <- readShapeSpatial("data/geospatial/MP14_SUBZONE_WEB_PL.shp") # plot singapore shape
+#mpbus <- readShapeSpatial("data/BusStopLocation_Jan2020/BusStop.shp") # plot busstop
 
 ## Analysing by Subzones or PA
 SZ <- read_csv("data/subzoneData.csv") %>%
