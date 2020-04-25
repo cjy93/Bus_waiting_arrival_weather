@@ -14,13 +14,36 @@ pacotes = c("shiny", "shinydashboard", "shinythemes", "plotly", "shinycssloaders
 # Options for Spinner
 options(spinner.color="#0275D8", spinner.color.background="#ffffff", spinner.size=2)
 
-# Run the following command to verify that the required packages are installed. If some package
-# is missing, it will be installed automatically
-package.check <- lapply(pacotes, FUN = function(x) {
-  if (!require(x, character.only = TRUE)) {
-    install.packages(x, dependencies = TRUE)
-  }
-})
+library(shiny)
+library(shinydashboard)
+library(plotly)
+library(shinycssloaders)
+library(tidyverse)
+library(dplyr)
+library(plotly)
+library(FNN)
+library(flows)
+library(sp)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(tidyverse)
+library(igraph)
+library(ggraph)
+library(tidygraph)
+library(lubridate)
+library(sf)
+library(flows)
+library(shinycssloaders)
+library(heatmaply)
+library(MASS)
+library(ERSA)
+library(car)
+library(rgdal)     # R wrapper around GDAL/OGR
+library(ggplot2)   # for general plotting
+library(ggmap)
+library(stringi)
+library(networkD3)
 
 ########################### Data Prep JY #############################
 # passenger volume per busstops
@@ -102,8 +125,8 @@ total$id <- as.character(total$id)
 #data<- read.csv("data/origin_dest_cleaned_jy_subset.csv") 
 
 # Plot Flows diagram
-mpsz <- readShapeSpatial("data/geospatial/MP14_SUBZONE_WEB_PL.shp") # plot singapore shape
-mpbus <- readShapeSpatial("data/BusStopLocation_Jan2020/BusStop.shp") # plot busstop
+#mpsz <- readShapeSpatial("data/geospatial/MP14_SUBZONE_WEB_PL.shp") # plot singapore shape
+#mpbus <- readShapeSpatial("data/BusStopLocation_Jan2020/BusStop.shp") # plot busstop
 
 ## Analysing by Subzones or PA
 SZ <- read_csv("data/subzoneData.csv") %>%
@@ -135,7 +158,7 @@ map_gg2_SZ <- geom_polygon(data = shapefile_df_SZ,
                         color = 'gray', fill = 'gray', size = .2) 
 map_gg3_SZ <- geom_path(data = shapefile_df_SZ, 
                      aes(x = long, y = lat, group = group),
-                     color = 'red', fill = 'red', size = .2)
+                     color = 'blue', fill = '#FBE2C8', size = .2)
 map_gg4_SZ <- ggplot() + map_gg2_SZ + map_gg3_SZ +geom_point() +
   annotate("point", x = 31596, y = 29220, colour = "blue")
 

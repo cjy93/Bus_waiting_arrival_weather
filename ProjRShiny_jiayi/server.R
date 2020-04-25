@@ -12,13 +12,62 @@ server <- function(input, output, session) {
     #     }, simplify = FALSE))
     # })
     ###################################################### For Aggregate_Filter Tab JY ######################################################
-    node<- read_csv("data/node_flowmap_SZ.csv")
-    node$district <- toupper(node$district)
-    node$id = as.character(as.numeric(node$id))
+    # node<- read_csv("data/node_flowmap_SZ.csv")
+    # node$district <- toupper(node$district)
+    # node$id = as.character(as.numeric(node$id))
     #edge_id2_SZ <- read_csv("data/edge_flowmap_SZ_passenger.csv")
     
+    node <- reactive({if (input$radio == 'PA'){
+        busstops <- busstops %>%
+          mutate(planning_area = toupper(planning_area)) #capitalise the column in subzone
+        busstops <- busstops %>% dplyr::select(c('planning_area','BusStopCode','district'))
+        
+        # Now inner join the 2 tables so i can find the weights
+        node_pa <- dplyr::inner_join(busstops, PA, by= 'planning_area') %>%
+          dplyr::select(c('OBJECTID','district','planning_area','X_ADDR','Y_ADDR'))%>%
+          group_by(OBJECTID,planning_area,X_ADDR,Y_ADDR) %>%  
+          summarise(weight = n()) %>%
+          filter(weight > 1) %>%
+          ungroup()  %>%
+          rename(id = OBJECTID) %>%
+          rename(name = planning_area)%>%
+          rename(x = X_ADDR) %>%
+          rename(y = Y_ADDR) 
+        
+        node_pa2 <- merge(node_pa, PA,by.x = "name", by.y="planning_area") %>%
+          dplyr::select(c("id","name", "REGION_N", "x", "y","weight")) %>%
+          rename(district=REGION_N)%>% mutate(id = as.character(id))
+        
+        #%>%
+        #mutate(district= toupper(district))
+        node_pa2
+        
+      }
+      else{
+        busstops <- busstops %>%
+          mutate(subzone_name = toupper(subzone_name)) #capitalise the column in subzone
+        busstops <- busstops %>% dplyr::select(c('subzone_name','BusStopCode','district'))
+        
+        # Now inner join the 2 tables so i can find the weights
+        node_SZ <- dplyr::inner_join(busstops, SZ, by =c('subzone_name')) %>%
+          dplyr::select(c('OBJECTID','district','subzone_name','X_ADDR','Y_ADDR'))%>%
+          group_by(OBJECTID,subzone_name,district,X_ADDR,Y_ADDR) %>%  
+          summarise(weight = n()) %>%
+          filter(weight > 1) %>%
+          ungroup()  %>%
+          rename(id = OBJECTID) %>%
+          rename(name = subzone_name)%>%
+          rename(x = X_ADDR) %>%
+          rename(y = Y_ADDR) %>%
+          mutate(id = as.character(id))
+        #node_SZ$id = as.character(as.numeric(node_SZ$id))
+        node_SZ
+      }
+    })  # end of creating node
+    
+    
     edges_data <- read_csv("data/origin_dest_Full_Aggregated_BusTrips.csv")
-    data2 <- read_csv("data/origin_dest_Full_Aggregated_n_weight.csv")
+    #data2 <- read_csv("data/origin_dest_Full_Aggregated_n_weight.csv")
     # # Load in edges file, which will change between selection of "passenger" or "n()"
     # edges_data <- reactive({ if (input$radio_flowsize == "passenger"){
     #   data1}
@@ -26,8 +75,15 @@ server <- function(input, output, session) {
     #     data2
     #   }})
     
+    ## convert to upper case for Sankey
+    edges_data_edit <- edges_data %>%
+      mutate(subzone_origin = toupper(subzone_origin)) %>%
+      mutate(subzone_destination = toupper(subzone_destination))
+   
+    ###
+    
     edges_full<- reactive({ if (input$radio=='SZ'){
-      edges <- edges_data()
+      edges <- edges_data
       #%>%
       #   select(-c('YEAR_MONTH','PT_TYPE','ORIGIN_PT_CODE','DESTINATION_PT_CODE','RoadName_Origin','Description_Origin','RoadName_Destination','Description_Destination'))
       # we need to append "subzone_origin" and "subzone_dest" so we can calculate weights based on busstops in these subzones
@@ -48,7 +104,7 @@ server <- function(input, output, session) {
       edges_full <- cbind(edges,category=1)
       edges_full}
       else{
-        edges <- edges_data()
+        edges <- edges_data
         #%>%
         #   select(-c('YEAR_MONTH','PT_TYPE','ORIGIN_PT_CODE','DESTINATION_PT_CODE','RoadName_Origin','Description_Origin','RoadName_Destination','Description_Destination'))
         # we need to append "subzone_origin" and "subzone_dest" so we can calculate weights based on busstops in these subzones
@@ -71,13 +127,13 @@ server <- function(input, output, session) {
       }}) # end of reactive
     
     
-    get_index = node %>% dplyr::select(c('id','name'))
+    get_index = reactive({node() %>% dplyr::select(c('id','name'))})
     
     edge_id2 <- reactive({
-      edge_id <- merge(edges_full(), get_index, by.x = "from", by.y = "name") %>%
+      edge_id <- merge(edges_full(), get_index(), by.x = "from", by.y = "name") %>%
         dplyr::select(-c("from")) %>%
         rename(from=id) 
-      edge_id2_local <- merge(edge_id, get_index, by.x = "to", by.y = "name") %>%
+      edge_id2_local <- merge(edge_id, get_index(), by.x = "to", by.y = "name") %>%
         dplyr::select(-c("to")) %>%
         rename(to=id)
       
@@ -90,12 +146,12 @@ server <- function(input, output, session) {
     
  # not to delete this is dummy test 
     
-    output$ex_out <- reactive({
-        str(c(input$radio,input$pa_from, input$pa_to, input$sz_from, input$sz_to)
-        )
-    })
-    
-    outputOptions(output, "ex_out", suspendWhenHidden = FALSE)      
+    # output$ex_out <- reactive({
+    #     str(c(input$radio,input$pa_from, input$pa_to, input$sz_from, input$sz_to)
+    #     )
+    # })
+    # 
+    # outputOptions(output, "ex_out", suspendWhenHidden = FALSE)      
     
   
     
@@ -125,11 +181,28 @@ server <- function(input, output, session) {
         }
     }) # end of renderDataTable TO
     
+    
+    
     ### Very Important: To update the "To" list based on edges from the "From"
+    ## for pa_to
+    pa_selection_from <- reactive({
+      nodeidFrom <- node()[which(node()$name %in% input$pa_from) ,] 
+      edgeid <- edge_id2()[which(edge_id2()$from %in% nodeidFrom$id),] 
+      nodeidTo <- node()[which(node()$id %in% edgeid$to) ,]
+      nodeNameTo <- unique(nodeidTo$name)
+      nodeNameTo #grab the last variable
+    })
+    
+    # https://shiny.rstudio.com/articles/selectize.html
+    # https://stackoverflow.com/questions/21465411/r-shiny-passing-reactive-to-selectinput-choices
+    observe({
+      updateSelectizeInput(session, 'pa_to', choices=pa_selection_from(), server=TRUE)
+    })
+    ## for sz_to
      sz_selection_from <- reactive({
-       nodeidFrom <- node[which(node$name %in% input$sz_from) ,] 
+       nodeidFrom <- node()[which(node()$name %in% input$sz_from) ,] 
        edgeid <- edge_id2()[which(edge_id2()$from %in% nodeidFrom$id),] 
-       nodeidTo <- node[which(node$id %in% edgeid$to) ,]
+       nodeidTo <- node()[which(node()$id %in% edgeid$to) ,]
        nodeNameTo <- unique(nodeidTo$name)
        nodeNameTo #grab the last variable
      })
@@ -145,28 +218,44 @@ server <- function(input, output, session) {
     ### Very Important: To update the "from" list in district based on the from in Edges
     sz_selection_district_from <- reactive({
       edgesId2 <- edge_id2()
-      nodeidFrom <- node[which(node$name %in% input$sz_from) ,] 
-      edgeid <- edgesId2[which(edgesId2$from %in% nodeidFrom$id),] 
-      nodeidTo <- node[which(node$id %in% edgeid$from) ,]
-      nodeDistrictFrom <- unique(nodeidTo$district)
-      nodeDistrictFrom #grab the last variable
+      if (input$radio == 'PA'){
+        nodeidFrom <- node()[which(node()$name %in% input$pa_from) ,] 
+        edgeid <- edgesId2[which(edgesId2$from %in% nodeidFrom$id),] 
+        nodeidTo <- node()[which(node()$id %in% edgeid$from) ,]
+        nodeDistrictFrom <- unique(nodeidTo$district)
+        nodeDistrictFrom #grab the last variable
+      } else {
+        nodeidFrom <- node()[which(node()$name %in% input$sz_from) ,] 
+        edgeid <- edgesId2[which(edgesId2$from %in% nodeidFrom$id),] 
+        nodeidTo <- node()[which(node()$id %in% edgeid$from) ,]
+        nodeDistrictFrom <- unique(nodeidTo$district)
+        nodeDistrictFrom #grab the last variable
+      }
     })
     observe({
       updateSelectizeInput(session, 'district_from', choices=sz_selection_district_from(), selected = sz_selection_district_from(), server=TRUE) # not work did not grab only the available district
     })
     
-    # to affect the district option in flow map
+    # to affect the district option in flow map. This will be done before the map can come out
     ### Very Important: To update the "from" list in district based on the To in Edges
     sz_selection_district_to <- reactive({
       edgesId2 <- edge_id2()
-      nodeidFrom <- node[which(node$name %in% input$sz_from) ,] 
-      edgeid <- edgesId2[which(edgesId2$to %in% nodeidFrom$id),] 
-      nodeidTo <- node[which(node$id %in% edgeid$to) ,]
-      nodeDistrictFrom <- unique(nodeidTo$district)
-      nodeDistrictFrom #grab the last variable
+      if (input$radio == 'PA'){
+        nodeidFrom <- node()[which(node()$name %in% input$pa_to) ,] 
+        edgeid <- edgesId2[which(edgesId2$to %in% nodeidFrom$id),] 
+        nodeidTo <- node()[which(node()$id %in% edgeid$to) ,]
+        nodeDistrictFrom <- unique(nodeidTo$district)
+        nodeDistrictFrom #grab the last variable
+      } else {
+        nodeidFrom <- node()[which(node()$name %in% input$sz_to) ,] 
+        edgeid <- edgesId2[which(edgesId2$to %in% nodeidFrom$id),] 
+        nodeidTo <- node()[which(node()$id %in% edgeid$to) ,]
+        nodeDistrictFrom <- unique(nodeidTo$district)
+        nodeDistrictFrom #grab the last variable
+      }
     })
     observe({
-      updateSelectizeInput(session, 'district_to', choices=sz_selection_district_to(), selected = sz_selection_district_from(),server=TRUE) # not work did not grab only the available district
+      updateSelectizeInput(session, 'district_to', choices=sz_selection_district_to(), selected = sz_selection_district_to(),server=TRUE) # not work did not grab only the available district
     })
     ### end of update district
     
@@ -286,10 +375,10 @@ server <- function(input, output, session) {
       
       #if (input$radio=="SZ"){
         # filter the Edges with temporary variable "node2" and "node3"
-        node2 <- node %>% filter(name %in% dataInput_From() ) #%>% filter(district %in% input$district_from)
+        node2 <- node() %>% filter(name %in% dataInput_From() ) #%>% filter(district %in% input$district_from)
         edge_id2_filtered <- edge_id2()[which(edge_id2()$from %in% node2$id) ,] 
         
-        node3 <- node %>% filter(name %in% dataInput_To())  #%>% filter(district %in% input$district_to)
+        node3 <- node() %>% filter(name %in% dataInput_To())  #%>% filter(district %in% input$district_to)
         print("edges before day type")
         #print(edge_id2_filtered)
         print(input$checkGroup)
@@ -303,7 +392,7 @@ server <- function(input, output, session) {
     node_filtered_reactive <- reactive({
       if (is.null(dataInput_From())== FALSE && is.null(dataInput_To())== FALSE){
         # filter nodes 
-        node_filtered <- node %>% filter(name %in% dataInput_From() | name %in% dataInput_To())# %>%
+        node_filtered <- node() %>% filter(name %in% dataInput_From() | name %in% dataInput_To())# %>%
           #filter(district %in% input$district_from | district %in% input$district$to)  ### trick to making sure 1 to 1 node edge exists
         node_filtered
       }
@@ -313,7 +402,8 @@ server <- function(input, output, session) {
     node_filtered_reactive_heatmap <- reactive({
       #if (input$radio=="SZ"){
       # filter nodes 
-      node_filtered <- node %>% filter(name %in% dataInput_From() | name %in% dataInput_To())
+      node_filtered <- node() %>% filter(name %in% dataInput_From() | name %in% dataInput_To()) %>%
+        mutate(id = as.character(id))
       node_filtered
       #}
       
@@ -513,7 +603,10 @@ server <- function(input, output, session) {
 	# ShapeFile for SZ
     # First read in the shapefile, using the path to the shapefile and the shapefile name minus the
     # extension as arguments
-    shapefile <- readOGR("data/geospatial", "MP14_SUBZONE_WEB_PL")
+    if(input$radio == 'PA'){
+      shapefile <- readOGR("data/geospatial", "MP14_PLNG_AREA_WEB_PL")
+    }else{
+      shapefile <- readOGR("data/geospatial", "MP14_SUBZONE_WEB_PL")}
     
     # Next the shapefile has to be converted to a dataframe for use in ggplot2
     shapefile_df <- fortify(shapefile)
@@ -526,7 +619,7 @@ server <- function(input, output, session) {
                                color = 'gray', fill = 'gray', size = .2) 
     map_gg3 <- geom_path(data = shapefile_df, 
                             aes(x = long, y = lat, group = group),
-                            color = 'red', fill = 'red', size = .2)
+                            color = 'purple', fill = 'purple', size = .2)
     map_gg4 <- ggplot() + map_gg2 + map_gg3 +geom_point() +
       annotate("point", x = 31596, y = 29220, colour = "blue")
     
@@ -547,13 +640,13 @@ server <- function(input, output, session) {
         maptheme
     
         plot(map_jy)
-    }, height = 600, width = 1600) # 
+    },height = 700, width = 1450) # end of output$map_jy 
     
     # create slider widget based on size of the node flows
     output$flowsize_slider_ui <- renderUI({
       sliderInput("flowsize", 
                   label = "Range of interest for node weights:",
-                  min = min(node_filtered_reactive()$weight), max = max(node_filtered_reactive()$weight), value = c(0, 100))
+                  min = min(node_filtered_reactive()$weight), max = max(node_filtered_reactive()$weight), value = c(min(node_filtered_reactive()$weight), max(node_filtered_reactive()$weight)))
     })
     
     # create slider widget based on size of the edges flows
@@ -562,9 +655,126 @@ server <- function(input, output, session) {
                   label = "Range of interest for edge weights:",
                   min = min(edges_for_plot4_reactive()$weight), max = max(edges_for_plot4_reactive()$weight), value = c(min(edges_for_plot4_reactive()$weight), max(edges_for_plot4_reactive()$weight)))
     })
+  ########################################### Sankey Diagram Jia Yi #####################################################
+   node_from <- reactive({ if(input$radio == 'PA'){
+     node() %>% filter(name %in% input$pa_from)
+   } else {
+     node() %>% filter(name %in% input$sz_from)
+   }   }) # end of edge_from
 
+    node_to <- reactive({ if(input$radio == 'PA'){
+      input$pa_to
+   } else {
+     input$sz_to
+   }})
+
+
+    sankey_fn_node <- reactive({
+      print('sankey_fn')
+      print(input$radio)
+      print('edge pa in pa_to')
+      print(input$pa_to)
+      #edge_id2_local <- edge_id2()
+      #print('edge_id2_local')
+      #print(edge_id2_local)
+      #print(edges_data$planning_area.x %in% input$pa_from)
+      if (input$radio == 'PA' ){
+        node_local_from = node() %>% filter(name %in% input$pa_from ) %>% dplyr:: select('name')
+        node_local_to = node() %>% filter(name %in% input$pa_to ) %>% dplyr:: select('name')
+        #print("node_id_from")
+        #print(node_id_local)
+        print("namevec")
+        print(node_local_from$name)
+        print(node_local_to$name)
+        print("hghggg")
+        name_vec <- c(node_local_from$name, node_local_to$name)
+        name_vec <- unique(name_vec)
+        print(name_vec)
+        
+      } else if (input$radio == 'SZ' ){
+        node_local_from = node() %>% filter(name %in% input$sz_from ) %>% dplyr:: select('name')
+        node_local_to = node() %>% filter(name %in% input$sz_to ) %>% dplyr:: select('name')
+        #print("node_id_from")
+        #print(node_id_local)
+        print("namevec")
+        name_vec <- c(node_local_from$name, node_local_to$name)
+        name_vec <- unique(name_vec)
+        print(name_vec)
+      }
+      
+      nodes_sank <- data.frame(name = name_vec, id = 0:(length(name_vec)-1)) %>%
+        mutate(id = as.numeric(id)) %>% mutate(name = as.character(name))
+     
+      
+      #print('edges_sankey')
+      #print(edges_sankey)
+      #print('nodes_from()')
+      #print(node_from())
+      # from sankey
+      print('sankey_fn_node')
+      print(class(nodes_sank))
+      nodes_sank
+    })
     
-    ############################## HeatMap Jiayi ####################################
+    
+    sankey_fn_edge <- reactive({
+      nodes_sank <- sankey_fn_node()
+      if (input$radio == 'PA'){
+        # aggregate data
+        edges_data2 <- edges_data%>%
+          group_by(planning_area.x,planning_area.y) %>%
+          summarise(weight =sum(weight))
+        edges_data2
+        
+        sank_edge <- edges_data2 %>%
+          left_join(nodes_sank,edges_data2, by=c('planning_area.x'='name')) %>%
+          rename(from_id = id) %>%
+          left_join(nodes_sank,edges_data2, by=c('planning_area.y'='name')) %>%
+          rename(to_id = id)
+        
+        sank_left <- sank_edge %>% filter(planning_area.x %in% input$pa_from)  %>% 
+          filter(planning_area.y %in% input$pa_to) 
+        #sank_left   # left edge
+      }
+      else if (input$radio == 'SZ'){
+        # aggregate data
+        edges_data2 <- edges_data_edit%>%
+          group_by(subzone_origin,subzone_destination) %>%
+          summarise(weight =sum(weight))
+        edges_data2
+        
+        
+        print("edges_data2")
+        #edges_data2
+        print(edges_data2)
+        
+        sank_edge <- edges_data2 %>%
+          left_join(nodes_sank,edges_data2, by=c('subzone_origin'='name')) %>%
+          rename(from_id = id) %>%
+          left_join(nodes_sank,edges_data2, by=c('subzone_destination'='name')) %>%
+          rename(to_id = id)
+        
+        print("sankedge")
+        print(sank_edge)
+        sank_left <- sank_edge %>% filter(subzone_origin %in% input$sz_from)  %>% 
+          filter(subzone_destination %in% input$sz_to) 
+        #sank_left   # left edge
+      }
+      
+      print("sankleft")
+      print(sank_left)
+      sank_left
+    })
+  
+   output$sankey_from <- renderSankeyNetwork({
+     sankeyNetwork(Links = sankey_fn_edge(), Nodes = sankey_fn_node(), Source = 'from_id', Target = 'to_id',
+                                                     Value = 'weight', NodeID = 'name', fontSize = 16)
+
+   })
+   
+    #https://christophergandrud.github.io/networkD3/
+    # to sankey
+    ######################################### HeatMap Jiayi ####################################
     ## Preparing the Origin Destination matrix to be in the form "from","to","frequency"
     flow_ori_dest <- reactive({
       if(is.null(edge_id2_filtered_reactive())==FALSE ){ # & (input$radio=="SZ")
@@ -581,6 +791,7 @@ server <- function(input, output, session) {
     observe({
       print('1qtyrtyr')
       print(edge_id2_filtered_reactive())
+      print('flow-ori')
       print(flow_ori_dest())
       #
       print('1q end')
@@ -614,7 +825,9 @@ server <- function(input, output, session) {
           # https://www.rdocumentation.org/packages/flows/versions/1.1.1/topics/firstflows
           
           flowSel1 <- firstflows(mat = myflows_local, method = input$firstflows_ui, 
-                                 k = input$kvalue)
+                                 k = as.numeric(input$kvalue))
+          # Select the dominant flows (incoming flows criterion)
+          flowSel2 <- domflows(mat = myflows_local, w = colSums(myflows_local), k = 1)
           # Select the dominant flows (incoming flows criterion)
           ##flowSel2 <- domflows(mat = myflows_local, w = colSums(myflows_local), k = 1)
           flowSel_local <- myflows_local * flowSel1
@@ -640,7 +853,7 @@ server <- function(input, output, session) {
           print('b')
           print(df_col_name_flow)
           
-          df_col_name_flow$id =  as.character(df_col_name_flow$id) 
+          df_col_name_flow$id =  as.character(df_col_name_flow$id)
           print('c')
           print(df_col_name_flow)
           
@@ -679,6 +892,49 @@ server <- function(input, output, session) {
       }
     })
     
+    # Combine selections for first heatmap based on absolute numbers
+    flowSel_dom <- reactive({
+      if(is.null(edge_id2_filtered_reactive())==FALSE ){ # && (input$radio=="SZ")
+        ## Select flows that represent at least 20% of the sum of outgoing flows for 
+        # each urban area. ( can select other methods )
+        
+        if (nrow(flow_ori_dest()) >0 ) { 
+          myflows_local <- prepflows(mat = flow_ori_dest(), i = "from", j = "to", fij = "Frequency")
+          ## Remove the matrix diagonal
+          diag(myflows_local) <- 0
+          # https://www.rdocumentation.org/packages/flows/versions/1.1.1/topics/firstflows
+          
+          flowSel1 <- firstflows(mat = myflows_local, method = input$firstflows_ui, 
+                                 k = as.numeric(input$kvalue))
+          # Select the dominant flows (incoming flows criterion)
+          flowSel2 <- domflows(mat = myflows_local, w = colSums(myflows_local), k = as.numeric(input$kvalue_dom))
+          # Select the dominant flows (incoming flows criterion)
+          ##flowSel2 <- domflows(mat = myflows_local, w = colSums(myflows_local), k = 1)
+          flowSel_local <- myflows_local * flowSel1 * flowSel2
+         
+          node_local = node_filtered_reactive_heatmap()
+         
+          col_name_flow <- colnames(flowSel_local)
+          
+          df_col_name_flow <- as.data.frame(col_name_flow)
+          
+          df_col_name_flow <- df_col_name_flow %>% rename(id =col_name_flow)
+          
+          df_col_name_flow$id =  as.character(df_col_name_flow$id) 
+          
+          
+          heatmap_name <- inner_join(df_col_name_flow, node_local, by = 'id') 
+          
+          
+          ## rename
+          colnames(flowSel_local) <- heatmap_name$name
+          rownames(flowSel_local) <- heatmap_name$name
+          
+          
+          flowSel_local
+        }
+      }
+    })
     
     # Combine selections for 2nd  heatmap based on absolute numbers
     flowSel2 <- reactive({
@@ -696,7 +952,7 @@ server <- function(input, output, session) {
           # https://www.rdocumentation.org/packages/flows/versions/1.1.1/topics/firstflows
           
           flowSel1 <- firstflows(mat = myflows_local/rowSums(myflows_local) * 100, method = input$firstflows2_ui, 
-                                 k = input$kvalue2)
+                                 k = as.numeric(input$kvalue2))
           # Select the dominant flows (incoming flows criterion)
           ##flowSel2 <- domflows(mat = myflows_local, w = colSums(myflows_local), k = 1)
           flowSel_local <- myflows_local * flowSel1
@@ -757,10 +1013,56 @@ server <- function(input, output, session) {
       }
     })
     
-    # Node weights
-    #inflows <- data.frame(id = colnames(myflows), w = colSums(myflows))
+    # Combine selections for first heatmap based on absolute numbers
+    flowSel2_dom <- reactive({
+      if(is.null(edge_id2_filtered_reactive())==FALSE ){ # && (input$radio=="SZ")
+        ## Select flows that represent at least 20% of the sum of outgoing flows for 
+        # each urban area. ( can select other methods )
+        
+        if (nrow(flow_ori_dest()) >0 ) { 
+          myflows_local <- prepflows(mat = flow_ori_dest(), i = "from", j = "to", fij = "Frequency")
+          ## Remove the matrix diagonal
+          diag(myflows_local) <- 0
+          # https://www.rdocumentation.org/packages/flows/versions/1.1.1/topics/firstflows
+          
+          flowSel1 <- firstflows(mat = myflows_local/rowSums(myflows_local) * 100, method = input$firstflows2_ui, 
+                                 k = as.numeric(input$kvalue2))
+          # Select the dominant flows (incoming flows criterion)
+          flowSel2 <- domflows(mat = myflows_local, w = colSums(myflows_local), k = as.numeric(input$kvalue2_dom))
+          # Select the dominant flows (incoming flows criterion)
+          ##flowSel2 <- domflows(mat = myflows_local, w = colSums(myflows_local), k = 1)
+          flowSel_local <- myflows_local * flowSel1 * flowSel2
+          
+          node_local = node_filtered_reactive_heatmap()
+          
+          col_name_flow <- colnames(flowSel_local)
+          
+          df_col_name_flow <- as.data.frame(col_name_flow)
+          
+          df_col_name_flow <- df_col_name_flow %>% rename(id =col_name_flow)
+          
+          df_col_name_flow$id =  as.character(df_col_name_flow$id) 
+          
+          
+          heatmap_name <- inner_join(df_col_name_flow, node_local, by = 'id') 
+          
+          
+          ## rename
+          colnames(flowSel_local) <- heatmap_name$name
+          rownames(flowSel_local) <- heatmap_name$name
+          
+          
+          flowSel_local
+        }
+      }
+    })
     
+    # creating sliders for k value in flows ## no have
+
+  
     
+    # plotting flows origin-dest map
+    # first flows
       output$ori_dest <- renderPlotly({
         if( is.null(edge_id2_filtered_reactive())==FALSE && 
             #(input$radio=="SZ") && 
@@ -781,20 +1083,38 @@ server <- function(input, output, session) {
         }
       })
       
+      # first flows with dom flows
+      output$ori_dest_dom <- renderPlotly({
+        if( is.null(edge_id2_filtered_reactive())==FALSE && 
+            #(input$radio=="SZ") && 
+            (nrow(flow_ori_dest()) >0) ) {
+          heatmaply(
+            flowSel_dom()
+          )
+        }
+      })
+      
+      output$ori_dest2_dom <- renderPlotly({
+        if( is.null(edge_id2_filtered_reactive())==FALSE && 
+            #(input$radio=="SZ") && 
+            (nrow(flow_ori_dest()) >0) ) {
+          heatmaply(percentize(flowSel2_dom())
+                    
+          )
+        }
+      })
     ############################################ Gravity Model Jia Yi #############################################
     # For X variable selections
     selectX <- c("closeness","between","degree","eigen")
     
-    # what to show on drop down
+    # X chosen
      observe({
-       updateSelectizeInput(session, 'select2_1', choices=selectX, selected = selectX[1], server=TRUE)
+       updateSelectizeInput(session, 'selectXvar', choices=selectX, selected = selectX, server=TRUE)
      })  
      
-     # left "select2_2" be dependent on output from 'select2_1'
-     observe({
-       selectXLess <- selectX[selectX!=input$select2_1]
-       updateSelectizeInput(session, 'select2_2', choices=selectXLess, selected = selectXLess[1], server=TRUE)
-     })
+     ############
+     
+   
      
      
      # https://www.statsandr.com/blog/a-shiny-app-for-simple-linear-regression-by-hand-and-in-r/
@@ -803,30 +1123,42 @@ server <- function(input, output, session) {
      # 2 variable
      #model <- lm(input$yVar ~ input$select2_1 + input$select2_2, data = pass_central)
      ## Function to extract X
-     extract_X <- function(selectId) {
-       if (input$selectId == "closeness"){
-         X <- closeness}
-       else if (input$selectId == "between"){
-         X <- between}
-       else if (input$selectId == "degree"){
-         X <- degree}
-       else{
-         X <- eigen
-       }
-       X #picks up the last item
-     }
+     
      
      # reactive linear model inputs from y and x from UI
+	linear1 <- reactive({
+       if (is.null(input$selectXvar)==FALSE && is.null(input$yVar)==FALSE){
+         print("input$selectXvar")
+         print(input$selectXvar)
+         print(class(input$selectXvar))
+         lis_new <-paste(input$selectXvar, collapse = "+")
+         print(lis_new)
+         print('input$yVar')
+         print(input$yVar)
+         print('input$yVar done')
+         fml = as.formula(sprintf('%s ~ %s ', input$yVar, lis_new))
+         fit = lm(fml, data=pass_central)
+         fit}})
      modelInOut = reactive({
-       # fml = as.formula(sprintf('%s ~ %s + %s +%s + %s', input$yVar, input$select2_1, "between", "degree", "eigen"))
-       fml = as.formula(sprintf('%s ~ %s + %s ', input$yVar, input$select2_1, input$select2_2))
+       if (is.null(input$selectXvar)==FALSE && is.null(input$yVar)==FALSE){
+       print("input$selectXvar")
+       print(input$selectXvar)
+       print(class(input$selectXvar))
+       lis_new <-paste(input$selectXvar, collapse = "+")
+       print(lis_new)
+       print('input$yVar')
+       print(input$yVar)
+       print('input$yVar done')
+       fml = as.formula(sprintf('%s ~ %s ', input$yVar, lis_new))
        fit = lm(fml, data=pass_central)
        #model_lm  <- lm(frequencyIn~ closeness + between + degree + eigen, data = pass_central)
-       steptest <- stepAIC(fit, direction = "both")
-       steptest
-     })
+       step <- stepAIC(fit, direction = "both")
+       step
+       } 
+     }) # end of modelInOut which gives the "stepAIC"
      #modelOut = lm(frequencyOut~ closeness + between + degree + eigen, data = pass_central)
      
+     observe({modelInOut()})
      # for the UI
      
      
@@ -851,81 +1183,36 @@ server <- function(input, output, session) {
                   selected = "frequencyIn")})
     # if only 2 element
     
-    # if 4 element
-    #y_tap <- lm(frequencyIn ~ closeness + between + degree + eigen, data = pass_central)
-    #step <- stepAIC(y_tap, direction = "both")
-    
-    
-    
-    
-    
-    model1 <- lm(frequencyIn ~ closeness + between + degree + eigen, data = pass_central)
-    model2 <- lm(frequencyIn ~ closeness + between + degree,  data = pass_central)
-    model3 <- lm(frequencyIn ~ closeness + between ,  data = pass_central)
-    model4 <- lm(frequencyIn ~ closeness ,  data = pass_central)
-    model5 <- lm(frequencyIn ~ closeness + between + degree*eigen + degree*between + degree*closeness , data = pass_central)
-
-    # AIC step wise to find best model
-    step1 <- stepAIC(model1, direction = "both") # linear terms only
-    #summary(step1)
-    #anova(step1)
-
-    step2 <- stepAIC(model2, direction = "both") # linear + quadratic terms
-    #summary(step2)
-    #anova(step2)
-
-    step3 <- stepAIC(model3, direction = "both") # linear + quadratic + interactive terms
-
-
-
-
-
-
-
-    ##### above is KIV
-    output$AIC <- renderPlot({
-      input$go
-      {if(input$models=='Model1'){plottStats(step1)
-      } else if(input$models=='Model2'){plottStats(step2)
-      } else if(input$models=='Model3'){plottStats(step3)
-      }
-      }
-      #plottStats(step3)
+   
+    #Plot the t statistics based on the y and x variable inputs
+    output$AIC <- renderPlotly({
+      plottStats(modelInOut())
+     
     })
+    output$Y <- renderText({input$yVar})
+    output$seeX <- renderText({input$selectXvar})
     # https://shiny.rstudio.com/reference/shiny/latest/plotOutput.html
     #input$newplot
 
     # texts output
-    output$pred1p <- renderText({if(input$models=='Model1'){anova(step1)$'Pr(>F)'[1]}})  # call col name
-    output$pred2p <- renderText({if(input$models=='Model2'){anova(step2)$'Pr(>F)'[1]}})
-    output$pred3p <- renderText({if(input$models=='Model3'){anova(step3)$'Pr(>F)'[1]}})
+     observe({
+      print("class linear")
+      print(linear1())
+      print("end of class linear")})
+    output$pred1p <- renderText({min(anova(linear1())$'Pr(>F)'[1:length(input$selectXvar)])})  # call col name
 
-    output$pred1slope <- renderText({if(input$models=='Model1'){step1[[1]][2]}})
-    output$pred2slope <- renderText({if(input$models=='Model2'){step2[[1]][2]}})
-    output$pred3slope <- renderText({if(input$models=='Model3'){step3[[1]][2]}})
 
-    output$pred1intercept <- renderText({if(input$models=='Model1'){step1[[1]][1]}})
-    output$pred2intercept <- renderText({if(input$models=='Model2'){step2[[1]][1]}})
-    output$pred3intercept <- renderText({if(input$models=='Model3'){step3[[1]][1]}})
-
-    output$pred1RSq <- renderText({if(input$models=='Model1'){summary(step1)[[8]][1]}})
-    output$pred2RSq <- renderText({if(input$models=='Model2'){summary(step2)[[8]][1]}})
-    output$pred3RSq <- renderText({if(input$models=='Model3'){summary(step3)[[8]][1]}})
+    output$pred1RSqAdj <- renderText({summary(modelInOut())[[9]][1]}) # adjusted R sq
+    #output$pred1RSq <- renderText({summary(modelInOut())[[8]][1]}) # non adjusted R sq
+    
+    output$linearModel <- renderPrint({summary(modelInOut())[4]})  #
 
 
 
 
-    # previous
-    pushButton <- eventReactive(input$go,{
-      runif(input$num)
-    })# take dependency on the input$go
 
     output$conclude1 <- renderPrint({
-      if(input$models=='Model1' & as.numeric(anova(step1)$'Pr(>F)'[1])<1-input$num){
-        'Statistically Significant. Reject H0'}
-      else if(input$models=='Model2' & as.numeric(anova(step2)$'Pr(>F)'[1])<1-input$num){
-        'Statistically Significant. Reject H0'}
-      else if(input$models=='Model3' & as.numeric(anova(step3)$'Pr(>F)'[1])<1-input$num){
+      if(as.numeric(anova(modelInOut())$'Pr(>F)'[1])<1-input$num){
         'Statistically Significant. Reject H0'}
       else {
         'Statistically not significant. Do not reject H0'
@@ -934,14 +1221,9 @@ server <- function(input, output, session) {
 
     #################################### plot residuals###################################
     output$resid <- renderPlot({
-      {if(input$models=='Model1'){par(mfrow = c(2, 2))
-        plot(step1)
-      } else if(input$models=='Model2'){par(mfrow = c(2, 2))
-        plot(step2)
-      } else if(input$models=='Model3'){par(mfrow = c(2, 2))
-        plot(step3)
-      }
-      }
+      par(mfrow = c(2, 2))
+        plot(modelInOut())
+      
     })
 
     ######################## type math formual for Durbin Watson test########################
@@ -949,24 +1231,15 @@ server <- function(input, output, session) {
       withMathJax(helpText('$$H_0 : \\sigma_d = 0$$'),helpText('$$H_0 : \\sigma_d \\ne 0$$'))
     })
     # plot Durbin watson test
-    output$DurbinStat <- renderText({if(input$models=='Model1'){durbinWatsonTest(step1)[[2]][1]
-    }else if(input$models=='Model2'){durbinWatsonTest(step2)[[2]][1]
-    }else if(input$models=='Model3'){durbinWatsonTest(step3)[[2]][1]
-    }
+    output$DurbinStat <- renderText({durbinWatsonTest(modelInOut())[[2]][1]
     })
 
-    output$DurbinProb <-   renderText({if(input$models=='Model1'){durbinWatsonTest(step1)[[3]][1]
-    }else if(input$models=='Model2'){durbinWatsonTest(step2)[[3]][1]
-    }else if(input$models=='Model3'){durbinWatsonTest(step3)[[3]][1]
-    }
+    output$DurbinProb <-   renderText({durbinWatsonTest(modelInOut())[[3]][1]
     })
     output$DurbinConclude <- renderPrint({
-      if(input$models=='Model1' & as.numeric(durbinWatsonTest(step1)[[3]][1])<1-input$num){
+      if(as.numeric(durbinWatsonTest(modelInOut())[[3]][1])<1-input$num){
         'Statistically Significant. Reject H0'}
-      else if(input$models=='Model2' & as.numeric(durbinWatsonTest(step2)[[3]][1])<1-input$num){
-        'Statistically Significant. Reject H0'}
-      else if(input$models=='Model3' & as.numeric(durbinWatsonTest(step3)[[3]][1])<1-input$num){
-        'Statistically Significant. Reject H0'}
+      
       else {
         'Statistically not significant. Do not reject H0'
       }
