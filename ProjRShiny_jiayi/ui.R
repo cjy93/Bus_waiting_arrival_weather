@@ -62,8 +62,8 @@ ui <- dashboardPage(
                             sidebarLayout(
                                 
                                     sidebarPanel(
-                                        helpText("Select passenger flow size"),
-                                        verbatimTextOutput('ex_out'),
+                                        #helpText("Select passenger flow size"),
+                                        #verbatimTextOutput('ex_out'),
                                         # I() indicates it is raw JavaScript code that should be evaluated, instead
                                         # of a normal character string
                                         ## Select dropdown of either filter by Planning Area or Filter by Subzone
@@ -76,7 +76,7 @@ ui <- dashboardPage(
                                             selectizeInput(
                                                 'pa_from', 'From Planning Area', choices = unique(busstops$planning_area) ,
                                                 multiple = TRUE,
-                                                options = list(maxItems = 10,
+                                                options = list(maxItems = 20,
                                                    placeholder = 'Please select one or more options below',
                                                    onInitialize = I('function() { this.setValue(""); }')
                                                 )
@@ -85,7 +85,7 @@ ui <- dashboardPage(
                                             selectizeInput(
                                                 'pa_to', 'To Planning Area', choices = unique(busstops$planning_area) ,
                                                 multiple = TRUE,
-                                                options = list(maxItems = 10,
+                                                options = list(maxItems = 20,
                                                     placeholder = 'Please select one or more options below',
                                                     onInitialize = I('function() { this.setValue(""); }')
                                                 )
@@ -98,7 +98,7 @@ ui <- dashboardPage(
                                                           selectizeInput(
                                                               'sz_from', 'From SubZone', choices = unique(busstops$subzone_name) ,
                                                               multiple = TRUE,
-                                                              options = list(maxItems = 10,
+                                                              options = list(maxItems = 20,
                                                                   placeholder = 'Please select one or more options below',
                                                                   onInitialize = I('function() { this.setValue(""); }')
                                                               )
@@ -108,7 +108,7 @@ ui <- dashboardPage(
                                                               'sz_to', 'To SubZone', choices = "initialisation"  , #initialise
                                                               #'sz_to', 'To SubZone', choices = unique(busstops$subzone_name) ,
                                                               multiple = TRUE,
-                                                              options = list(maxItems=10,
+                                                              options = list(maxItems=20,
                                                                   placeholder = 'Please select one or more options below',
                                                                   onInitialize = I('function() { this.setValue(""); }')
                                                               )
@@ -223,18 +223,13 @@ ui <- dashboardPage(
             
             tabItem(tabName = 'flow_Bar_Graph',
                     fluidPage(
-                        titlePanel("Trip Generator and Receiver"),
-                        
-                        sidebarLayout(
-                            sidebarPanel(
-                                
-                                
-                            ),
-                            
-                            mainPanel(
+                        title = "Trip Generator and Receiver",
+                        h3("Trip Generator and Receiver"),
+                                h4("To aggregate by Planning Area or Subzones:"),
+                                h5("Please filter at 'Aggregate Filter' Tab"),
+                                h5("Nodes on the left are the source and nodes on the right are the destination"),
                                 sankeyNetworkOutput("sankey_from")
-                            )
-                        )
+                          
                     )
             ), #end of tabname "flow_Bar_Graph" 
             
@@ -319,7 +314,7 @@ ui <- dashboardPage(
             
             tabItem(tabName = 'Gravity_Model',
                     fluidPage(
-                        titlePanel("Gravity_Model"),
+                        titlePanel("Gravity Model"),
                         
                         sidebarLayout(
                             sidebarPanel(
@@ -332,13 +327,7 @@ ui <- dashboardPage(
                                                    onInitialize = I('function() { this.setValue(""); }')
                                     )
                                 ),
-                                selectInput(inputId = "models", 
-                                            label = "Choose a variable to display",
-                                            choices = c("Model1", 
-                                                        "Model2",
-                                                        "Model3"),
-                                            selected = "Model3"),
-                                
+                               
                                 numericInput(inputId = "num", 
                                              label = ("confidence level"), 
                                              value = 0.95)
@@ -346,48 +335,44 @@ ui <- dashboardPage(
                                 
                             ),
                             
+                            # https://dss.princeton.edu/online_help/analysis/interpreting_regression.htm
                             mainPanel(
-                                h5("The polynomial regression model (bivariate analysis) is calculated for each demographic variable and shown below:"),
-                                h4("Slope"),
-                                verbatimTextOutput("pred1slope"),
-                                verbatimTextOutput("pred2slope"),
-                                verbatimTextOutput("pred3slope"),
-                                h4("Intercept"),
-                                verbatimTextOutput("pred1intercept"),
-                                verbatimTextOutput("pred2intercept"),
-                                verbatimTextOutput("pred3intercept"),
-                                h4("R Square"),
-                                verbatimTextOutput("pred1RSq"),
-                                verbatimTextOutput("pred2RSq"),
-                                verbatimTextOutput("pred3RSq"),
-                                h5("If p value is < 1-(confidence level), we conclude that the relationship between the independent variables and medal average is statistically significant"),
-                                h4("P value of regression model"),
-                                verbatimTextOutput("pred1p"),
-                                verbatimTextOutput("pred2p"),
-                                verbatimTextOutput("pred3p"),
-                                verbatimTextOutput("conclude1"),
-                                verbatimTextOutput("conclude2"),
-                                verbatimTextOutput("conclude3"),
-                                #plottStats("finalCoef")
-                                plotOutput("AIC"),
-                                verbatimTextOutput("seeX"),
-                                h4("In order for our regression model to be more accurate, our group has to check if the assumption of error terms having constant variance is satisfied."),
-                                plotOutput("resid"),
-                                column(6,
-                                       h4("Now we check if the error terms are independent at 5% significance level using the Durbin Watson test."),
-                                       h4("The Durbin_Watson Test"),
-                                       h5("The value of Durbin-Watson Statistics ranges from 0 to 4.
-                                         As a general Rule of thumb, the residuals are not correlated if the DW statistic is approximately 2 ,
-                                         and an acceptable range for the DW statistic is 1.50 to 2.50"),
-                                       uiOutput("HypoDurbin")
-                                ),
-                                column(6,
-                                       h4('Durbin-Watson Statistic'),
-                                       verbatimTextOutput("DurbinStat"),
-                                       h4('Durbin-Watson P-value'),
-                                       verbatimTextOutput("DurbinProb"),
-                                       h4('Durbin-Watson conclusion'),
-                                       verbatimTextOutput("DurbinConclude")
+                                tabsetPanel(
+                                    tabPanel("Regression Model",
+                                        h5("The polynomial regression model is calculated for each demographic variable and shown below:"),
+                                        h4("X variables chosen"),
+                                        verbatimTextOutput("seeX"),
+                                        h4("Adjusted R Square for Regression Model"),
+                                        verbatimTextOutput("pred1RSqAdj"),
+                                        h5("If p value is < 1-(confidence level), we conclude that the relationship between the independent variables and medal average is statistically significant"),
+                                        h4("P value of regression model"),
+                                        verbatimTextOutput("pred1p"),
+                                        verbatimTextOutput("conclude1"),
+                                        #plottStats("finalCoef"),
+                                        h4("After StepAIC 'both' directions"),
+                                        withSpinner(plotlyOutput("AIC")),
+                                        h5("t statistic is the coefficient divided by its standard error"),
+                                        verbatimTextOutput("linearModel")),
+                                    tabPanel("Model Assumptions",
+                                        h4("In order for our regression model to be more accurate, our group has to check if the assumption of error terms having constant variance is satisfied."),
+                                        withSpinner(plotOutput("resid")),
+                                        column(6,
+                                               h4("Now we check if the error terms are independent at 5% significance level using the Durbin Watson test."),
+                                               h4("The Durbin_Watson Test"),
+                                               h5("The value of Durbin-Watson Statistics ranges from 0 to 4.
+                                                 As a general Rule of thumb, the residuals are not correlated if the DW statistic is approximately 2 ,
+                                                 and an acceptable range for the DW statistic is 1.50 to 2.50"),
+                                               uiOutput("HypoDurbin")
+                                        ),
+                                        column(6,
+                                               h4('Durbin-Watson Statistic'),
+                                               verbatimTextOutput("DurbinStat"),
+                                               h4('Durbin-Watson P-value'),
+                                               verbatimTextOutput("DurbinProb"),
+                                               h4('Durbin-Watson conclusion'),
+                                               verbatimTextOutput("DurbinConclude")
+                                        )       
+                                    ) # end of tabsetpanel
                                 )
                             )
                         )

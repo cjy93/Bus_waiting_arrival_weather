@@ -760,87 +760,19 @@ server <- function(input, output, session) {
           filter(subzone_destination %in% input$sz_to) 
         #sank_left   # left edge
       }
-      # sank_edge
-      # print("sankedge")
-      # print(names(sank_edge))
-      # print("to_id")
-      # print(sank_edge$to_id)
+
       print("sankleft")
       print(sank_left)
       sank_left
     })
-   # filter the edges available given the selected inputs
-   # sankey_fn_edge <- reactive({
-   #   print('sankey_fn')
-   #   print(input$radio)
-   #   print('edge pa in pa_to')
-   #   print(input$pa_to)
-   #   #edge_id2_local <- edge_id2()
-   #   #print('edge_id2_local')
-   #   #print(edge_id2_local)
-   #   #print(edges_data$planning_area.x %in% input$pa_from)
-   # if (input$radio == 'PA' ){
-   #   node_local_from = node() %>% filter(name %in% input$pa_from ) %>% dplyr:: select('name')
-   #   node_local_to = node() %>% filter(name %in% input$pa_to ) %>% dplyr:: select('name')
-   #   #print("node_id_from")
-   #   #print(node_id_local)
-   #   edges_sankey <- edges_data %>% filter(planning_area.x %in% node_local_from)%>%
-   #     filter(planning_area.y %in% node_local_to)
-   # 
-   # } else if (input$radio == 'SZ' ){
-   #   node_local_from = node() %>% filter(name %in% input$sz_from ) %>% dplyr:: select('name')
-   #   node_local_to = node() %>% filter(name %in% input$sz_to ) %>% dplyr:: select('name')
-   #   #print("node_id_from")
-   #   #print(node_id_local)
-   #   edges_sankey <- edges_data %>% filter(planning_area.x %in% node_local_from)%>%
-   #     filter(planning_area.y %in% node_local_to)
-   # }
-   #   # aggregate each pair of edges
-   #   edges_sankey_id <- edges_sankey  %>%
-   #     
-   #   edges_sankey_agg <- edges_sankey_id %>% dplyr::group_by(from,to) %>% summarise(weight = sum(weight))
-   # print('sankey_fn_edge')
-   # print(edges_sankey_agg)
-   # #print('nodes_from()')
-   # #print(node_from())
-   # # from sankey
 
-   # edges_sankey_agg
-   # print("classEdgessakey")
-   # print(class(edges_sankey_agg))
-   
-   #sankey <- htmlwidgets::prependContent(sankey, htmltools::tags$h1("Interactive Sankey flow Origin to Destination by PA"))
-   #print('sankey')
-   #print(sankey)
-   #sankey
    output$sankey_from <- renderSankeyNetwork({
      sankeyNetwork(Links = sankey_fn_edge(), Nodes = sankey_fn_node(), Source = 'from_id', Target = 'to_id',
                                                      Value = 'weight', NodeID = 'name', fontSize = 16)
 
    })
    
-
-
-    # # URL <- paste0(
-    # #   "https://cdn.rawgit.com/christophergandrud/networkD3/",
-    # #   "master/JSONdata/energy.json")
-    # # Energy <- jsonlite::fromJSON(URL)
-    # # # Plot
-    # # sankeyNetwork(Links = Energy$links, Nodes = Energy$nodes, Source = "source",
-    # #               Target = "target", Value = "value", NodeID = "name",
-    # #               units = "TWh", fontSize = 12, nodeWidth = 30)
-
-    # output$sankey_from <- renderSankeyNetwork({
-    #   sankeyNetwork(Links = sankey_fn_edge(), Nodes = node(), Source = 'from', Target = 'to',
-    #                                                   Value = 'weight', NodeID = 'id', fontSize = 16)
-    # 
-    #   #a <- sankey_fn()
-    #   #sankeyNetwork(sankey_fn())
-    # 
-    # sankeyNetwork(Links = Energy$links, Nodes = Energy$nodes, Source = "source",
-    #               Target = "target", Value = "value", NodeID = "name",
-    #               units = "TWh", fontSize = 12, nodeWidth = 30)
-    #})
+   #https://christophergandrud.github.io/networkD3/
     # to sankey
     ######################################### HeatMap Jiayi ####################################
     ## Preparing the Origin Destination matrix to be in the form "from","to","frequency"
@@ -1171,7 +1103,7 @@ server <- function(input, output, session) {
           )
         }
       })
-    ############################################ Gravity Model Jia Yi #############################################
+    ############################################ Gravity Model Jia Yi #######################################################
     # For X variable selections
     selectX <- c("closeness","between","degree","eigen")
     
@@ -1194,6 +1126,20 @@ server <- function(input, output, session) {
      
      
      # reactive linear model inputs from y and x from UI
+     linear1 <- reactive({
+       if (is.null(input$selectXvar)==FALSE && is.null(input$yVar)==FALSE){
+         print("input$selectXvar")
+         print(input$selectXvar)
+         print(class(input$selectXvar))
+         lis_new <-paste(input$selectXvar, collapse = "+")
+         print(lis_new)
+         print('input$yVar')
+         print(input$yVar)
+         print('input$yVar done')
+         fml = as.formula(sprintf('%s ~ %s ', input$yVar, lis_new))
+         fit = lm(fml, data=pass_central)
+         fit}})
+     
      modelInOut = reactive({
        if (is.null(input$selectXvar)==FALSE && is.null(input$yVar)==FALSE){
        print("input$selectXvar")
@@ -1210,7 +1156,7 @@ server <- function(input, output, session) {
        step <- stepAIC(fit, direction = "both")
        step
        } 
-     })
+     }) # end of modelInOut which gives the "stepAIC"
      #modelOut = lm(frequencyOut~ closeness + between + degree + eigen, data = pass_central)
      
      observe({modelInOut()})
@@ -1238,79 +1184,37 @@ server <- function(input, output, session) {
                   selected = "frequencyIn")})
     # if only 2 element
     
-    # if 4 element
-    #y_tap <- lm(frequencyIn ~ closeness + between + degree + eigen, data = pass_central)
-    #step <- stepAIC(y_tap, direction = "both")
     
-    
-    
-    
-    
-    model1 <- lm(frequencyIn ~ closeness + between + degree + eigen, data = pass_central)
-    model2 <- lm(frequencyIn ~ closeness + between + degree,  data = pass_central)
-    model3 <- lm(frequencyIn ~ closeness + between ,  data = pass_central)
-    model4 <- lm(frequencyIn ~ closeness ,  data = pass_central)
-    model5 <- lm(frequencyIn ~ closeness + between + degree*eigen + degree*between + degree*closeness , data = pass_central)
-
-    # AIC step wise to find best model
-    step1 <- stepAIC(model1, direction = "both") # linear terms only
-    #summary(step1)
-    #anova(step1)
-
-    step2 <- stepAIC(model2, direction = "both") # linear + quadratic terms
-    #summary(step2)
-    #anova(step2)
-
-    step3 <- stepAIC(model3, direction = "both") # linear + quadratic + interactive terms
-
-
-
-
-
-
-
     #Plot the t statistics based on the y and x variable inputs
-    output$AIC <- renderPlot({
+    output$AIC <- renderPlotly({
       plottStats(modelInOut())
      
     })
-    
+    output$Y <- renderText({input$yVar})
     output$seeX <- renderText({input$selectXvar})
     # https://shiny.rstudio.com/reference/shiny/latest/plotOutput.html
     #input$newplot
 
     # texts output
-    output$pred1p <- renderText({if(input$models=='Model1'){anova(step1)$'Pr(>F)'[1]}})  # call col name
-    output$pred2p <- renderText({if(input$models=='Model2'){anova(step2)$'Pr(>F)'[1]}})
-    output$pred3p <- renderText({if(input$models=='Model3'){anova(step3)$'Pr(>F)'[1]}})
-
-    output$pred1slope <- renderText({if(input$models=='Model1'){step1[[1]][2]}})
-    output$pred2slope <- renderText({if(input$models=='Model2'){step2[[1]][2]}})
-    output$pred3slope <- renderText({if(input$models=='Model3'){step3[[1]][2]}})
-
-    output$pred1intercept <- renderText({if(input$models=='Model1'){step1[[1]][1]}})
-    output$pred2intercept <- renderText({if(input$models=='Model2'){step2[[1]][1]}})
-    output$pred3intercept <- renderText({if(input$models=='Model3'){step3[[1]][1]}})
-
-    output$pred1RSq <- renderText({if(input$models=='Model1'){summary(step1)[[8]][1]}})
-    output$pred2RSq <- renderText({if(input$models=='Model2'){summary(step2)[[8]][1]}})
-    output$pred3RSq <- renderText({if(input$models=='Model3'){summary(step3)[[8]][1]}})
+    
+    observe({
+      print("class linear")
+      print(linear1())
+      print("end of class linear")})
+    output$pred1p <- renderText({min(anova(linear1())$'Pr(>F)'[1:length(input$selectXvar)])})  # call col name
 
 
+    output$pred1RSqAdj <- renderText({summary(modelInOut())[[9]][1]}) # adjusted R sq
+    #output$pred1RSq <- renderText({summary(modelInOut())[[8]][1]}) # non adjusted R sq
+    
+    output$linearModel <- renderPrint({summary(modelInOut())[4]})  #
 
 
-    # previous
-    pushButton <- eventReactive(input$go,{
-      runif(input$num)
-    })# take dependency on the input$go
 
     output$conclude1 <- renderPrint({
-      if(input$models=='Model1' & as.numeric(anova(step1)$'Pr(>F)'[1])<1-input$num){
+      if(as.numeric(anova(modelInOut())$'Pr(>F)'[1])<1-input$num){
         'Statistically Significant. Reject H0'}
-      else if(input$models=='Model2' & as.numeric(anova(step2)$'Pr(>F)'[1])<1-input$num){
-        'Statistically Significant. Reject H0'}
-      else if(input$models=='Model3' & as.numeric(anova(step3)$'Pr(>F)'[1])<1-input$num){
-        'Statistically Significant. Reject H0'}
+      
       else {
         'Statistically not significant. Do not reject H0'
       }
@@ -1318,14 +1222,9 @@ server <- function(input, output, session) {
 
     #################################### plot residuals###################################
     output$resid <- renderPlot({
-      {if(input$models=='Model1'){par(mfrow = c(2, 2))
-        plot(step1)
-      } else if(input$models=='Model2'){par(mfrow = c(2, 2))
-        plot(step2)
-      } else if(input$models=='Model3'){par(mfrow = c(2, 2))
-        plot(step3)
-      }
-      }
+      par(mfrow = c(2, 2))
+        plot(modelInOut())
+      
     })
 
     ######################## type math formual for Durbin Watson test########################
@@ -1333,24 +1232,15 @@ server <- function(input, output, session) {
       withMathJax(helpText('$$H_0 : \\sigma_d = 0$$'),helpText('$$H_0 : \\sigma_d \\ne 0$$'))
     })
     # plot Durbin watson test
-    output$DurbinStat <- renderText({if(input$models=='Model1'){durbinWatsonTest(step1)[[2]][1]
-    }else if(input$models=='Model2'){durbinWatsonTest(step2)[[2]][1]
-    }else if(input$models=='Model3'){durbinWatsonTest(step3)[[2]][1]
-    }
+    output$DurbinStat <- renderText({durbinWatsonTest(modelInOut())[[2]][1]
     })
 
-    output$DurbinProb <-   renderText({if(input$models=='Model1'){durbinWatsonTest(step1)[[3]][1]
-    }else if(input$models=='Model2'){durbinWatsonTest(step2)[[3]][1]
-    }else if(input$models=='Model3'){durbinWatsonTest(step3)[[3]][1]
-    }
+    output$DurbinProb <-   renderText({durbinWatsonTest(modelInOut())[[3]][1]
     })
     output$DurbinConclude <- renderPrint({
-      if(input$models=='Model1' & as.numeric(durbinWatsonTest(step1)[[3]][1])<1-input$num){
+      if(as.numeric(durbinWatsonTest(modelInOut())[[3]][1])<1-input$num){
         'Statistically Significant. Reject H0'}
-      else if(input$models=='Model2' & as.numeric(durbinWatsonTest(step2)[[3]][1])<1-input$num){
-        'Statistically Significant. Reject H0'}
-      else if(input$models=='Model3' & as.numeric(durbinWatsonTest(step3)[[3]][1])<1-input$num){
-        'Statistically Significant. Reject H0'}
+      
       else {
         'Statistically not significant. Do not reject H0'
       }
