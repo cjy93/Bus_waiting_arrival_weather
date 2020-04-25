@@ -75,6 +75,13 @@ server <- function(input, output, session) {
     #     data2
     #   }})
     
+    ## convert to upper case for Sankey
+    edges_data_edit <- edges_data %>%
+      mutate(subzone_origin = toupper(subzone_origin)) %>%
+      mutate(subzone_destination = toupper(subzone_destination))
+   
+    ###
+    
     edges_full<- reactive({ if (input$radio=='SZ'){
       edges <- edges_data
       #%>%
@@ -677,9 +684,11 @@ server <- function(input, output, session) {
         #print("node_id_from")
         #print(node_id_local)
         print("namevec")
-        #print(node_local_from$name)
-        #print(node_local_to$name)
-        name_vec <- c(unique(node_local_from$name, node_local_to$name))
+        print(node_local_from$name)
+        print(node_local_to$name)
+        print("hghggg")
+        name_vec <- c(node_local_from$name, node_local_to$name)
+        name_vec <- unique(name_vec)
         print(name_vec)
         
       } else if (input$radio == 'SZ' ){
@@ -688,11 +697,14 @@ server <- function(input, output, session) {
         #print("node_id_from")
         #print(node_id_local)
         print("namevec")
-        name_vec <- c(unique(node_local_from$name, node_local_to$name))
+        name_vec <- c(node_local_from$name, node_local_to$name)
+        name_vec <- unique(name_vec)
         print(name_vec)
       }
-      nodes_sank <- data.frame(name = name_vec, id = 0:length(name_vec)) %>%
-        mutate(id = as.numeric(id))
+      
+      nodes_sank <- data.frame(name = name_vec, id = 0:(length(name_vec)-1)) %>%
+        mutate(id = as.numeric(id)) %>% mutate(name = as.character(name))
+     
       
       #print('edges_sankey')
       #print(edges_sankey)
@@ -704,23 +716,58 @@ server <- function(input, output, session) {
       nodes_sank
     })
     
+    
     sankey_fn_edge <- reactive({
+      nodes_sank <- sankey_fn_node()
       if (input$radio == 'PA'){
-      sank_edge <- edges_data %>%
-      left_join(sankey_fn_node(),edge_data, by=c('planning_area.x'='name')) %>%
-      rename(from_id = id) %>%
-      left_join(sankey_fn_node(),edge_data, by=c('planning_area.y'='name')) %>%
-      rename(to_id = id)
+        # aggregate data
+        edges_data2 <- edges_data%>%
+          group_by(planning_area.x,planning_area.y) %>%
+          summarise(weight =sum(weight))
+        edges_data2
+        
+        sank_edge <- edges_data2 %>%
+          left_join(nodes_sank,edges_data2, by=c('planning_area.x'='name')) %>%
+          rename(from_id = id) %>%
+          left_join(nodes_sank,edges_data2, by=c('planning_area.y'='name')) %>%
+          rename(to_id = id)
+        
+        sank_left <- sank_edge %>% filter(planning_area.x %in% input$pa_from)  %>% 
+          filter(planning_area.y %in% input$pa_to) 
+        #sank_left   # left edge
       }
       else if (input$radio == 'SZ'){
-        sank_edge <- edges_data %>%
-          left_join(sankey_fn_node(),edge_data, by=c('subzone_origin'='name')) %>%
+        # aggregate data
+        edges_data2 <- edges_data_edit%>%
+          group_by(subzone_origin,subzone_destination) %>%
+          summarise(weight =sum(weight))
+        edges_data2
+        
+        
+        print("edges_data2")
+        #edges_data2
+        print(edges_data2)
+        
+        sank_edge <- edges_data2 %>%
+          left_join(nodes_sank,edges_data2, by=c('subzone_origin'='name')) %>%
           rename(from_id = id) %>%
-          left_join(sankey_fn_node(),edge_data, by=c('subzone_destination'='name')) %>%
+          left_join(nodes_sank,edges_data2, by=c('subzone_destination'='name')) %>%
           rename(to_id = id)
+        
+        print("sankedge")
+        print(sank_edge)
+        sank_left <- sank_edge %>% filter(subzone_origin %in% input$sz_from)  %>% 
+          filter(subzone_destination %in% input$sz_to) 
+        #sank_left   # left edge
       }
-      sank_edge
-      
+      # sank_edge
+      # print("sankedge")
+      # print(names(sank_edge))
+      # print("to_id")
+      # print(sank_edge$to_id)
+      print("sankleft")
+      print(sank_left)
+      sank_left
     })
    # filter the edges available given the selected inputs
    # sankey_fn_edge <- reactive({
