@@ -88,9 +88,9 @@ server <- function(input, output, session) {
       #   select(-c('YEAR_MONTH','PT_TYPE','ORIGIN_PT_CODE','DESTINATION_PT_CODE','RoadName_Origin','Description_Origin','RoadName_Destination','Description_Destination'))
       # we need to append "subzone_origin" and "subzone_dest" so we can calculate weights based on busstops in these subzones
       edges_join <- merge(edges, busstops, by.x='BusStopCode_x', by.y = 'BusStopCode') %>% 
-        rename(subzone_ori = subzone_name) %>% rename(planning_area_origin = planning_area) #%>% select(-c("subzone_origin","subzone_destination"))
+        rename(subzone_ori = subzone_name)  %>% rename(planning_area_origin = planning_area) #%>% select(-c("subzone_origin","subzone_destination"))
       edges_join2 <- merge(edges_join, busstops, by.x='BusStopCode_y', by.y = 'BusStopCode') %>% 
-        rename(subzone_dest = subzone_name)  %>% rename(planning_area_dest = planning_area)
+        rename(subzone_dest = subzone_name) %>% rename(planning_area_dest = planning_area)
       # remove the intermediate dataframe from cache
       
       edges <- edges_join2 %>%
@@ -109,9 +109,9 @@ server <- function(input, output, session) {
         #   select(-c('YEAR_MONTH','PT_TYPE','ORIGIN_PT_CODE','DESTINATION_PT_CODE','RoadName_Origin','Description_Origin','RoadName_Destination','Description_Destination'))
         # we need to append "subzone_origin" and "subzone_dest" so we can calculate weights based on busstops in these subzones
         edges_join <- merge(edges, busstops, by.x='BusStopCode_x', by.y = 'BusStopCode') %>% 
-          rename(subzone_ori = subzone_name) %>% rename(planning_area_origin = planning_area) #%>% select(-c("subzone_origin","subzone_destination"))
+          rename(planning_area_origin = planning_area) #%>% select(-c("subzone_origin","subzone_destination"))
         edges_join2 <- merge(edges_join, busstops, by.x='BusStopCode_y', by.y = 'BusStopCode') %>% 
-          rename(subzone_dest = subzone_name)  %>% rename(planning_area_dest = planning_area)
+          rename(planning_area_dest = planning_area)
         # remove the intermediate dataframe from cache
         
         edges <- edges_join2 %>%
@@ -536,16 +536,16 @@ server <- function(input, output, session) {
       need(count(node_pos) > 0 , 'There are no node available with your current filters, please change your settings')
     )
     
-    lay <- create_layout(g, 'manual',
-                            node.positions = node_pos)
-    
+    #lay <- create_layout(g, 'manual',
+    #                        node.positions = node_pos)
+     lay  <- create_layout(g, layout='drl')
     
     print("hjshkjha4")
     print(node_pos)
     
-    lay <- lay[ -c(1,2) ]
+    #lay <- lay[ -c(1,2) ]
     # add node degree for scaling the node sizes
-    lay$weight <- degree(g)
+    #lay$weight <- degree(g)
     # We pass the layout lay and use ggraph's geoms geom_edge_arc and geom_node_point for plotting:
     
     # convert all columns to numeric
@@ -562,6 +562,8 @@ server <- function(input, output, session) {
     print(edge_id2_filtered)
     print("after filtering edge plot4")
     print(edge_id2_filtered)
+	# solve the missing edge.id error
+    edge_id2_filtered <- edge_id2_filtered %>% mutate(edge.id = row_number())
     
     # filter the nodes based on edges filter
     
@@ -589,8 +591,8 @@ server <- function(input, output, session) {
     #edges_for_plot4_SZ$xend <- as.numeric(as.character(edges_for_plot4_SZ$xend))
     #edges_for_plot4_SZ$yend <- as.numeric(as.character(edges_for_plot4_SZ$yend))
     
-    lay$x <-  as.numeric(as.character(lay$x))
-    lay$y <-  as.numeric(as.character(lay$y))
+    #lay$x <-  as.numeric(as.character(lay$x))
+    #lay$y <-  as.numeric(as.character(lay$y))
     
     
     
@@ -631,11 +633,14 @@ server <- function(input, output, session) {
                       alpha = 0.5) +
         scale_edge_width_continuous(range = c(0.5,5),             # scale for edge widths
                                     guide = FALSE) +
-        geom_node_point(aes(size = weight, color= as.factor(district),alpha=0.5,stroke=0.5),show.legend = TRUE,     # draw node # size = weight # color outside geom is color of 
+        geom_node_point(aes(size = weight, color= as.factor(district),alpha=0.5,stroke=0.5), # draw node # size = weight # color outside geom is color of 
+                        data=node_filtered # somehow need to repoint data. if not will have error on higher lib ver
                         #outer boundary of marker # fill is internal shading of point marker # outside is constant color, aes is mapping variables, eg for color
         ) +
         scale_size_continuous(range = c(1, 10), guide = FALSE) +    # scale for node sizes
-        geom_node_text(aes(label = name),show.legend = FALSE, repel = TRUE, size = 3,
+         geom_node_text(aes(label = name),
+                       data=node_filtered, # somehow need to repoint data. if not will have error on higher lib ver
+                       repel = TRUE, size = 3,
                        color = "white", fontface = "bold") +
         maptheme
     
