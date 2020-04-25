@@ -54,7 +54,12 @@ passVol <- passVol %>% rename(BusStopCode = PT_CODE) %>%
 central <- read_csv("data/centralityTable.csv")
 central$BusStopCode <- as.character(central$BusStopCode)
 pass_central <- inner_join(passVol, central, by = "BusStopCode") %>%
-  rename(closeness=closeness.f, between=between.f,eigen=eigen.f,degree=degree.f) 
+  rename(closeness=closeness.f, between=between.f,eigen=eigen.f,degree=degree.f) %>%
+  mutate( degree = degree**(1/2)) %>%
+  mutate(between = between**(1/4)) %>%
+  mutate(eigen = eigen**(1/2)) %>%
+  mutate(closeness = closeness**(7))
+  
 
   
 
