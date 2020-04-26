@@ -1,12 +1,12 @@
 ## Library packages 
 
-
+#mengyong packages
 library(shiny)
 library(tidyverse)
 library(shinydashboard)
 library(flows)
 library(maptools)
-library(st)
+#library(st)
 library(leaflet)
 library(reshape2)
 library(igraph)
@@ -19,63 +19,75 @@ library(RColorBrewer)
 library(plotly)
 library(ggthemes)
 library(dplyr)
+
+#jiayi additional packages
 library(shinycssloaders)
 library(FNN)
 library(ggplot2)
-library(reshape2)
 library(lubridate)
 library(sf)
 library(heatmaply)
 library(MASS)
 library(ERSA)
-library(car)
+#library(car)
 library(rgdal)     # R wrapper around GDAL/OGR
 #library(ggmap)
+library(stringi)
+library(networkD3)
+
 
 options(spinner.color="#0275D8", spinner.color.background="#ffffff", spinner.size=2)
-
-
+suppressWarnings(as.numeric(c("1", "2", "X")))
 ##################################################### Import data here #########################################################
 
-# Busstop Volume (Mengyong)
-busstop_volume <- read.csv("data/passenger volume by busstop.csv")%>% 
-  rename(BusStopCode = PT_CODE)
+# busstop volume
+busstop_volume <- read.csv("data/passenger volume by busstop.csv")
+passVol <- busstop_volume
+
+#centrality > move to bottom
+colnames(busstop_volume)[5] = "BusStopCode"
 busstop_volume$BusStopCode <- as.character(busstop_volume$BusStopCode)
 
-# Passenger Volume by Busstop (Jiayi)
-passVol <- busstop_volume %>% 
+passVol <- passVol %>% rename(BusStopCode = PT_CODE) %>%
   group_by(BusStopCode) %>% summarise(frequencyIn = sum(TOTAL_TAP_IN_VOLUME),frequencyOut = sum(TOTAL_TAP_OUT_VOLUME))
 
-# Busstop
+
+# busstop information
 busstops <- read.csv("data/busstop_lonlat_subzone_District.csv")%>%
-  mutate(subzone_name = toupper(subzone_name))%>% #capitalise the column in subzone
   dplyr::filter(planning_area != "Invalid")
+busstops$subzone_name_my <- busstops$subzone_name
+mutate(busstops, subzone_name = toupper(subzone_name)) #capitalise the column in subzone
 busstops$BusStopCode <- as.integer(busstops$BusStopCode)
 busstops$BusStopCode <- as.character(busstops$BusStopCode)
+busstops$planning_area_proper[busstops$planning_area_proper %in% c('Central Water Catchment', 'Mandai', 'Marina South', 'Museum', 'Newton', 'Orchard', 'Outram', 
+                                                                           'Seletar', 'Rochor', 'Singapore River', 'Tanglin', 'Southern Islands', 'River Valley', 'Paya Lebar', 
+                                                                           'Straits View', 'Tengah')] <- "Others"
+drops <- c("planning_area")
 
-# Bus Route
+busstops_my <- busstops
+busstops_my <- busstops_my[ , !(names(busstops_my) %in% drops)] %>%
+  rename(planning_area = planning_area_proper) 
+
+
+#bus route
 busroute <- read_csv('data/bus_route_overall.csv')
 busroute$BusStopCode <- as.integer(busroute$BusStopCode)
 busroute$BusStopCode <- as.character(busroute$BusStopCode)
 busroute <- busroute[c('BusStopCode', 'Direction', 'Distance', 'ServiceNo', 'StopSequence')]
 busroute <- busroute[busroute$BusStopCode %in% as.list(unique(busstops['BusStopCode']))[['BusStopCode']], ] 
 
-# Centrality dataset (Removed, using from dataset Mengyong created, see code chunk at end of global.R)
-#central <- read_csv("data/centralityTable.csv")
-#central$BusStopCode <- as.character(central$BusStopCode)
-#pass_central <- inner_join(passVol, central, by = "BusStopCode") %>%
-#  rename(closeness=closeness.f, between=between.f, eigen=eigen.f, degree=degree.f) 
 
 ## Analysing by Subzones or PA
 SZ <- read_csv("data/subzoneData.csv") %>%
   rename(subzone_name = SUBZONE_N) 
 PA <- read_csv("data/PAData.csv") %>%
   rename(planning_area = PLN_AREA_N)
-
 #####################################################  Apps Jia Yi #########################################################
 ############################### Flow Map #####################################
 ## Create node
+
 #busstops <- busstops %>% dplyr::select(c('planning_area','subzone_name','BusStopCode','district'))
+
 
 # ShapeFile for SZ
 # First read in the shapefile, using the path to the shapefile and the shapefile name minus the
@@ -93,29 +105,33 @@ map_gg2_SZ <- geom_polygon(data = shapefile_df_SZ,
                            color = 'gray', fill = 'gray', size = .2) 
 map_gg3_SZ <- geom_path(data = shapefile_df_SZ, 
                         aes(x = long, y = lat, group = group),
-                        color = 'red', fill = 'red', size = .2)
+                        color = 'blue', fill = '#FBE2C8', size = .2)
 map_gg4_SZ <- ggplot() + map_gg2_SZ + map_gg3_SZ +geom_point() +
   annotate("point", x = 31596, y = 29220, colour = "blue")
 
+# prepared the file outside and call them in for app to run faster
+########### this is still the subset file ##########################
+
+## Origin Destination data
 
 ##################################################### Mengyong Proportionate symbol map#########################################################
 
-busstop_volume_lat_long_my <- dplyr::inner_join(busstop_volume, busstops, by ='BusStopCode')
+busstop_volume_lat_long_my <- dplyr::inner_join(busstop_volume, busstops_my, by ='BusStopCode')
 location_my <- busstop_volume_lat_long_my %>%
   dplyr::group_by(BusStopCode)%>%
   dplyr::arrange(desc(BusStopCode))%>%
   rename(c(lat = Latitude, lon = Longitude))
 
-location_my$tap_in_out_radius <- (location_my$TOTAL_TAP_IN_VOLUME + location_my$TOTAL_TAP_OUT_VOLUME)**(1/2)/6
-location_my <- location_my[c('planning_area', 'subzone_name', 'DAY_TYPE', 'TIME_PER_HOUR', 'BusStopCode', 'Description', 'RoadName', 'TOTAL_TAP_IN_VOLUME', 'TOTAL_TAP_OUT_VOLUME', 'lon', 'lat', 'tap_in_out_radius')]%>%
+#location_my$tap_in_out_radius <- (location_my$TOTAL_TAP_IN_VOLUME + location_my$TOTAL_TAP_OUT_VOLUME)**(1/2)/6
+location_my <- location_my[c('planning_area', 'subzone_name_my', 'DAY_TYPE', 'TIME_PER_HOUR', 'BusStopCode', 'Description', 'RoadName', 'TOTAL_TAP_IN_VOLUME', 'TOTAL_TAP_OUT_VOLUME', 'lon', 'lat')]%>%
   rename(c(Day = DAY_TYPE, TapIns = TOTAL_TAP_IN_VOLUME, TapOuts = TOTAL_TAP_OUT_VOLUME, Time = TIME_PER_HOUR, PlanningArea = planning_area)) %>%
   dplyr::filter(Time >=6 & Time <= 23)
 
 planning_area_list_my <-sort(unique(location_my$PlanningArea))
 
-pal <- colorNumeric(palette = "RdPu", domain = location_my$tap_in_out_radius)
+#pal <- colorNumeric(palette = "RdPu", domain = location_my$TapIns*2)
 
-##################################################### Mengyong Centrality #########################################################
+##################################################### Mengyong Centrality#########################################################
 
 busroute_2 <- busroute
 busroute_2['StopSequence'] = busroute_2['StopSequence']-1
@@ -124,7 +140,7 @@ busroute_2 <- busroute_2[c('BusStopCode_dest', 'Direction', 'ServiceNo', 'StopSe
 busstops_from_to <- dplyr::inner_join(busroute, busroute_2, by =c('StopSequence', 'ServiceNo', 'Direction'))
 
 #join the two tables together
-busroute_busstop <- dplyr::inner_join(busstops_from_to, busstops, by ='BusStopCode')
+busroute_busstop <- dplyr::inner_join(busstops_from_to, busstops_my, by ='BusStopCode')
 keeps <- c('BusStopCode', 'BusStopCode_dest')
 busroute_busstop <- busroute_busstop[, keeps, drop = FALSE] %>% 
   rename(from = BusStopCode) %>%
@@ -142,7 +158,7 @@ busroute_busstop_aggregated$from <- as.character(busroute_busstop_aggregated$fro
 busroute_busstop_aggregated$to <- as.character(busroute_busstop_aggregated$to)
 
 #nodes
-nodes_my <- busstops %>%
+nodes_my <- busstops_my %>%
   rename(id = BusStopCode)
 nodes_my$id <- as.character(nodes_my$id)
 
@@ -170,35 +186,41 @@ node3=data.frame(cbind(node1,node2))
 
 edge_table <- node3 %>%
   rename(c(long.f = V1, lat.f = V2, long.t = V1.1, lat.t = V2.1, between.f = V3, closeness.f = V4, eigen.f = V5, degree.f = V6))%>%
-  dplyr::left_join(busstops, by =c("long.f"= "Longitude", "lat.f" = "Latitude")) 
+  dplyr::left_join(busstops_my, by =c("long.f"= "Longitude", "lat.f" = "Latitude")) 
 
-keeps <- c("long.f","lat.f","long.t","lat.t", "planning_area", 'subzone_name', "between.f", "closeness.f", "eigen.f","degree.f" )
+keeps <- c("long.f","lat.f","long.t","lat.t", "planning_area", 'subzone_name_my', "between.f", "closeness.f", "eigen.f","degree.f" )
 edge_table <- edge_table[ , (names(edge_table) %in% keeps)]
 
-range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+#range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+range01 <- function(x) trunc(rank(x))/length(x)
 
 edge_table$between.f <-range01(edge_table$between.f)
 edge_table$closeness.f <-range01(edge_table$closeness.f)
-edge_table$eigen.f <-round(range01(log(edge_table$eigen.f+1)**0.15),3)
+edge_table$eigen.f <-range01(edge_table$eigen.f)
 edge_table$degree.f <-range01(edge_table$degree.f)
 
 # get node table
 map_table <- plot_vector2 %>%
   rename(c(long.f = V1, lat.f = V2, between.f = V3, closeness.f = V4, eigen.f = V5, degree.f = V6))%>%
-  dplyr::left_join(busstops, by =c("long.f"= "Longitude", "lat.f" = "Latitude")) 
+  dplyr::left_join(busstops_my, by =c("long.f"= "Longitude", "lat.f" = "Latitude")) 
 
 map_table$between.f <-round(range01(map_table$between.f),3)
 map_table$closeness.f <-round(range01(map_table$closeness.f),3)
-map_table$eigen.f <-round(range01(log(map_table$eigen.f+1)**0.15),3)
+map_table$eigen.f <-round(range01(map_table$eigen.f),3)
 map_table$degree.f <-round(range01(map_table$degree.f),3)
+
+#write.csv(map_table,"Path where you'd like to export the DataFrame\\File Name.csv", row.names = FALSE)
 
 #get the radius of the bubbles
 map_table$combined.f = (map_table$between.f*3+1)**(3/4) + (map_table$closeness.f*3+1)**(3/4) + (map_table$eigen.f*3+1)**(3/4) + (map_table$degree.f*3+1)**(3/4)
 
-##################################################### Jiayi Part 2 - Centrality #########################################################
-
-### Jiayi's centrality dataset
+#Jiayi's centrality'
 central <- map_table
 central$BusStopCode <- as.character(central$BusStopCode)
+passVol$BusStopCode <- as.character(passVol$BusStopCode)
 pass_central <- inner_join(passVol, central, by = "BusStopCode") %>%
-  rename(closeness=closeness.f, between=between.f, eigen=eigen.f, degree=degree.f) 
+  rename(closeness=closeness.f, between=between.f,eigen=eigen.f,degree=degree.f) %>%
+  mutate( degree = degree**(1/2)) %>%
+  mutate(between = between**(1/4)) %>%
+  mutate(eigen = eigen**(1/2)) %>%
+  mutate(closeness = closeness**(7))

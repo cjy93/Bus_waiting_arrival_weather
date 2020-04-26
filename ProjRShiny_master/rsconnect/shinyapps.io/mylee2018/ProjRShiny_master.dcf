@@ -1,0 +1,12 @@
+name: ProjRShiny_master
+title: ProjRShiny_master
+username:
+account: mylee2018
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2171194
+bundleId: 3064330
+url: https://mylee2018.shinyapps.io/ProjRShiny_master/
+when: 1587840855.44591
+asMultiple: FALSE
+asStatic: FALSE
