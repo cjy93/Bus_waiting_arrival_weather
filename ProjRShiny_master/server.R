@@ -151,7 +151,7 @@ server <- function(input, output, session) {
   # https://shiny.rstudio.com/articles/selectize.html
   # https://stackoverflow.com/questions/21465411/r-shiny-passing-reactive-to-selectinput-choices
   observe({
-    updateSelectizeInput(session, 'pa_to', choices=pa_selection_from(), server=TRUE)
+    updateSelectizeInput(session, 'pa_to', choices=sort(pa_selection_from()), server=TRUE)
   })
   ## for sz_to
   sz_selection_from <- reactive({
@@ -165,7 +165,7 @@ server <- function(input, output, session) {
   # https://shiny.rstudio.com/articles/selectize.html
   # https://stackoverflow.com/questions/21465411/r-shiny-passing-reactive-to-selectinput-choices
   observe({
-    updateSelectizeInput(session, 'sz_to', choices=sz_selection_from(), server=TRUE)
+    updateSelectizeInput(session, 'sz_to', choices= sort(sz_selection_from()), server=TRUE)
   })
   ### end of update "To" list based on edges available
   
@@ -735,13 +735,13 @@ server <- function(input, output, session) {
   ############
   
   # reactive linear model inputs from y and x from UI
-  linear1 <- reactive({
-    if (is.null(input$selectXvar)==FALSE && is.null(input$yVar)==FALSE){
-      
-      lis_new <-paste(input$selectXvar, collapse = "+")
-      fml = as.formula(sprintf('%s ~ %s ', input$yVar, lis_new))
-      fit = lm(fml, data=pass_central)
-      fit}})
+  # linear1 <- reactive({
+  #   if (is.null(input$selectXvar)==FALSE && is.null(input$yVar)==FALSE){
+  #     
+  #     lis_new <-paste(input$selectXvar, collapse = "+")
+  #     fml = as.formula(sprintf('%s ~ %s ', input$yVar, lis_new))
+  #     fit = lm(fml, data=pass_central)
+  #     fit}})
   modelInOut = reactive({
     if (is.null(input$selectXvar)==FALSE && is.null(input$yVar)==FALSE){
       
@@ -778,7 +778,7 @@ server <- function(input, output, session) {
   output$seeX <- renderText({input$selectXvar})
   # https://shiny.rstudio.com/reference/shiny/latest/plotOutput.html
   
-  output$pred1p <- renderText({min(anova(linear1())$'Pr(>F)'[1:length(input$selectXvar)])})  # call col name
+  output$pred1p <- renderText({min(anova(modelInOut())$'Pr(>F)'[1:length(input$selectXvar)])})  # call col name
   output$pred1RSqAdj <- renderText({summary(modelInOut())[[9]][1]}) # adjusted R sq
   
   output$linearModel <- renderPrint({summary(modelInOut())[4]})  #
