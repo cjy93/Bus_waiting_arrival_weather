@@ -58,7 +58,9 @@ pass_central <- inner_join(passVol, central, by = "BusStopCode") %>%
   mutate( degree = degree**(1/2)) %>%
   mutate(between = between**(1/4)) %>%
   mutate(eigen = eigen**(1/2)) %>%
-  mutate(closeness = closeness**(7))
+  mutate(closeness = closeness**(7)) %>%
+  mutate(frequencyIn = frequencyIn**(1/7)) %>%
+  mutate(frequencyOut = frequencyOut**(1/8))
   
 
   
