@@ -74,7 +74,7 @@ ui <- dashboardPage(
                                         conditionalPanel( condition = "input.radio=='PA'", #input.radio == 'PA'
                                             # if you select planning area, then show this
                                             selectizeInput(
-                                                'pa_from', 'From Planning Area', choices = unique(busstops$planning_area) ,
+                                                'pa_from', 'From Planning Area', choices = sort(unique(busstops$planning_area)) ,
                                                 multiple = TRUE,
                                                 options = list(maxItems = 20,
                                                    placeholder = 'Please select one or more options below',
@@ -83,7 +83,7 @@ ui <- dashboardPage(
                                             ), #end of selectizeInput from Planning Area
                                             
                                             selectizeInput(
-                                                'pa_to', 'To Planning Area', choices = unique(busstops$planning_area) ,
+                                                'pa_to', 'To Planning Area', choices = sort(unique(busstops$planning_area)) ,
                                                 multiple = TRUE,
                                                 options = list(maxItems = 20,
                                                     placeholder = 'Please select one or more options below',

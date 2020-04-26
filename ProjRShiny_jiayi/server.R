@@ -196,7 +196,7 @@ server <- function(input, output, session) {
     # https://shiny.rstudio.com/articles/selectize.html
     # https://stackoverflow.com/questions/21465411/r-shiny-passing-reactive-to-selectinput-choices
     observe({
-      updateSelectizeInput(session, 'pa_to', choices=pa_selection_from(), server=TRUE)
+      updateSelectizeInput(session, 'pa_to', choices= sort(pa_selection_from()), server=TRUE)
     })
     ## for sz_to
      sz_selection_from <- reactive({
@@ -210,7 +210,7 @@ server <- function(input, output, session) {
     # https://shiny.rstudio.com/articles/selectize.html
     # https://stackoverflow.com/questions/21465411/r-shiny-passing-reactive-to-selectinput-choices
     observe({
-      updateSelectizeInput(session, 'sz_to', choices=sz_selection_from(), server=TRUE)
+      updateSelectizeInput(session, 'sz_to', choices= sort(sz_selection_from()), server=TRUE)
     })
     ### end of update "To" list based on edges available
     
