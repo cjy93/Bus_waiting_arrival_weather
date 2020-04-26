@@ -118,10 +118,10 @@ server <- function(input, output, session) {
   # render tables
   output$mytableFrom = DT::renderDataTable({
     if (input$radio=="PA"){
-      busstops%>% filter(busstops$planning_area %in% input$pa_from)
+      busstops%>% filter(busstops$planning_area %in% input$pa_from) %>% dplyr::select(c("planning_area", "subzone_name","BusStopCode","district"))
     }
     else{
-      busstops%>% filter(busstops$subzone_name %in% input$sz_from)
+      busstops%>% filter(toupper(busstops$subzone_name) %in% input$sz_from)%>% dplyr::select(c("planning_area", "subzone_name","BusStopCode","district"))
     }
   }) # end of renderDataTable FROM
   # https://community.rstudio.com/t/evaluation-error-operation-not-allowed-without-an-active-reactive-context/18468/3
@@ -131,10 +131,10 @@ server <- function(input, output, session) {
   output$mytableTo = DT::renderDataTable({
     if (input$radio=="PA"){
       ## KIV
-      busstops%>% filter(busstops$planning_area %in% input$pa_to)
+      busstops%>% filter(busstops$planning_area %in% input$pa_to)%>% dplyr::select(c("planning_area", "subzone_name","BusStopCode","district"))
     }
     else{
-      busstops%>% filter(busstops$subzone_name %in% input$sz_to)
+      busstops%>% filter(toupper(busstops$subzone_name) %in% input$sz_to)%>% dplyr::select(c("planning_area", "subzone_name","BusStopCode","district"))
     }
   }) # end of renderDataTable TO
   
@@ -723,6 +723,11 @@ server <- function(input, output, session) {
       )
     }
   })
+  
+  ########################################### EDA Jia Yi #############################################
+  ## Correlation Matrix plot
+  # http://www.sthda.com/english/wiki/ggplot2-quick-correlation-matrix-heatmap-r-software-and-data-visualization
+  
   ############################################ Gravity Model Jia Yi #############################################
   # For X variable selections
   selectX <- c("closeness","between","degree","eigen")

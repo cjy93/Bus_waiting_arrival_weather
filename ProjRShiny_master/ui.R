@@ -12,7 +12,7 @@ ui <- dashboardPage(
                                  menuItem('Home', tabName = 'Home', icon=icon("home")),
                                  menuItem('  Passenger Volume', tabName = 'Passenger_volume', icon = icon("connectdevelop")),
                                  menuItem('Bus Stop Centrality', tabName = 'Centrality', icon = icon("globe")),
-                                 menuItem('Flow', tabName = 'Flow_Diagrams', icon = icon("bus"),startExpanded= FALSE,
+                                 menuItem('Flow', tabName = 'Flow_Diagrams', icon = icon("bus"),startExpanded= TRUE,
                                           menuSubItem("Aggregation Filters", tabName = "Aggregation_Filters"),
                                           menuSubItem("Flow Map", tabName = "Flow_Map"),
                                           menuSubItem("Trip Generator and Receiver", tabName = "flow_Bar_Graph"),
@@ -101,7 +101,7 @@ ui <- dashboardPage(
                                     conditionalPanel( condition = "input.radio=='SZ'", 
                                                       # if you select subzone, then show this
                                                       selectizeInput(
-                                                          'sz_from', 'From SubZone', choices = sort(unique(busstops$subzone_name)) ,
+                                                          'sz_from', 'From SubZone', choices = toupper(sort(unique(busstops$subzone_name))) ,
                                                           multiple = TRUE,
                                                           options = list(maxItems = 20,
                                                                          placeholder = 'Please select one or more options below',
