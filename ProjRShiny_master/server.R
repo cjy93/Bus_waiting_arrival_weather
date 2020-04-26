@@ -725,8 +725,149 @@ server <- function(input, output, session) {
   })
   
   ########################################### EDA Jia Yi #############################################
-  ## Correlation Matrix plot
+  ## Density Plot
   # http://www.sthda.com/english/wiki/ggplot2-quick-correlation-matrix-heatmap-r-software-and-data-visualization
+  # Density Plot for y variables
+  output$Density_jy <- renderPlot({
+    if (input$densityPlotJY == "Y" && input$radioDensityJY == "Standard"){
+      fIn <- ggplot(data = pass_central, aes(x=(frequencyIn))) + 
+        geom_histogram(aes(y=..density..), colour="black", fill="white")+
+        geom_density(alpha=.2, fill="#FF6666") + labs(x = "Tap In Volume")+ylim(0,0.80)
+      
+      fOut <-ggplot(data = pass_central, aes(x=(frequencyOut))) + 
+        geom_histogram(aes(y=..density..), colour="black", fill="white")+
+        geom_density(alpha=.2, fill="#FF6666") + labs(x = "Tap Out Volume")+ylim(0,0.80)
+      
+        densityJY<- ggarrange(fIn, fOut,
+                               ncol = 2, nrow = 1)
+        plot(densityJY)}
+    
+    else if (input$densityPlotJY == "Y" && input$radioDensityJY == "Original"){
+      fIn <- ggplot(data = pass_central, aes(x=(frequencyIn))) + 
+        geom_histogram(aes(y=..density..), colour="black", fill="white")+
+        geom_density(alpha=.2, fill="#FF6666") + labs(x = "Tap In Volume")
+      
+      fOut <-ggplot(data = pass_central, aes(x=(frequencyOut))) + 
+        geom_histogram(aes(y=..density..), colour="black", fill="white")+
+        geom_density(alpha=.2, fill="#FF6666") + labs(x = "Tap Out Volume")
+      
+      densityJY1<- ggarrange(fIn, fOut,
+                            ncol = 2, nrow = 1)
+      plot(densityJY1)}
+    # end of output$yDensity_jy
+  
+  
+    else if(input$densityPlotJY=='X' && input$radioDensityJY == "Standard"){
+      # Density Plot for x variables with standard y limit
+      fBetween <- ggplot(data = pass_central, aes(x=between)) + 
+        geom_histogram(aes(y=..density..), colour="black", fill="white")+
+        geom_density(alpha=.2, fill="#FF6666") + labs(x = "Betweeness Centrality")+ylim(0,40)
+      
+      fCloseness <- ggplot(data = pass_central, aes(x=closeness)) + 
+        geom_histogram(aes(y=..density..), colour="black", fill="white")+
+        geom_density(alpha=.2, fill="#FF6666") + labs(x = "Closeness Centrality")+ylim(0,40)
+      
+      fEigen <- ggplot(data = pass_central, aes(x=eigen)) + 
+        geom_histogram(aes(y=..density..), colour="black", fill="white")+
+        geom_density(alpha=.2, fill="#FF6666") + labs(x = "Eigenvalue Centrality")+ylim(0,40)
+      
+      fDegree <- ggplot(data = pass_central, aes(x=(degree))) + 
+        geom_histogram(aes(y=..density..), colour="black", fill="white")+
+        geom_density(alpha=.2, fill="#FF6666") + labs(x = "Degree Centrality")+ylim(0,40)
+      
+      xDensity_jy <-ggarrange(fBetween, fCloseness,fEigen,fDegree, 
+                              ncol = 4, nrow = 1)
+      plot(xDensity_jy)}
+    else if(input$densityPlotJY=='X' && input$radioDensityJY == "Original"){
+      # Density Plot for x variables without standard y limit
+      fBetween <- ggplot(data = pass_central, aes(x=between)) + 
+        geom_histogram(aes(y=..density..), colour="black", fill="white")+
+        geom_density(alpha=.2, fill="#FF6666") + labs(x = "Betweeness Centrality")
+      
+      fCloseness <- ggplot(data = pass_central, aes(x=closeness)) + 
+        geom_histogram(aes(y=..density..), colour="black", fill="white")+
+        geom_density(alpha=.2, fill="#FF6666") + labs(x = "Closeness Centrality")
+      
+      fEigen <- ggplot(data = pass_central, aes(x=eigen)) + 
+        geom_histogram(aes(y=..density..), colour="black", fill="white")+
+        geom_density(alpha=.2, fill="#FF6666") + labs(x = "Eigenvalue Centrality")
+      
+      fDegree <- ggplot(data = pass_central, aes(x=(degree))) + 
+        geom_histogram(aes(y=..density..), colour="black", fill="white")+
+        geom_density(alpha=.2, fill="#FF6666") + labs(x = "Degree Centrality")
+      
+      xDensity_jy <-ggarrange(fBetween, fCloseness,fEigen,fDegree, 
+                                     ncol = 4, nrow = 1)
+      
+      plot(xDensity_jy)}
+  }) # end of output$xDensity_jy_plot
+  
+  ## Correlation Matrix Plot
+  corr_central_jy <- cor(pass_central[c("frequencyIn","frequencyOut","between","degree","eigen","closeness")])
+  output$corrplot_jy <- renderPlot({
+    corr <- round(cor(corr_central_jy), 1)
+    #p.mat <- cor_pmat(corr_central_jy)
+    correlation <- ggcorrplot(corr,
+                              colors = c("#6D9EC1", "white", "#E46726"), 
+                              legend.title = "correlation matrix",
+                              method = input$shape, type = input$typeShape)
+     
+    plot(correlation)
+  })
+  # http://www.sthda.com/english/wiki/ggcorrplot-visualization-of-a-correlation-matrix-using-ggplot2
+  
+  
+  ## Bivariate analysis
+  output$bivariate_jy <- renderPlotly({
+    axis = list(showline=FALSE,
+                zeroline=FALSE,
+                gridcolor='#ffff',
+                ticklen=4,
+                titlefont=list(size=13))
+    
+    p <- pass_central %>%
+      plot_ly() %>%
+      add_trace(
+        type = 'splom',
+        dimensions = list(
+          list(label='betweenness', values=~`between`),
+          list(label='closeness', values=~`closeness`),
+          list(label='eigenvalue', values=~`eigen`),
+          list(label='degree', values=~`degree`),
+          list(label='frequencyIn', values=~`frequencyIn`),
+          list(label='frequencyOut', values=~`frequencyOut`)
+        ),
+        #text=~factor(type), #, labels=c("red","white")
+        diagonal=list(visible=F),
+        marker = list(
+          color = 'blue',
+          size = 5,
+          line = list(
+            width = 1,
+            color = 'rgb(230,230,230)'
+          )
+        )
+      ) %>%
+      layout(
+        title = "Interactive Scatterplot Matrix for Centrality data",
+        hovermode='closest',
+        dragmode = 'select',
+        plot_bgcolor='rgba(240,240,240, 0.95)',
+        xaxis=list(domain=NULL, showline=F, zeroline=F, gridcolor='#ffff', ticklen=4, titlefont=list(size=13,tickangle = 45)),
+        yaxis=list(domain=NULL, showline=F, zeroline=F, gridcolor='#ffff', ticklen=4, titlefont=list(size=13)),
+        xaxis2=axis,
+        xaxis3=axis,
+        xaxis4=axis,
+        xaxis5=axis,
+        xaxis6=axis,
+        xaxis7=axis
+        
+      )
+    
+    lp <- p %>% style(showupperhalf = F )
+    lp
+    ggplotly(lp)
+  })
   
   ############################################ Gravity Model Jia Yi #############################################
   # For X variable selections

@@ -17,7 +17,7 @@ ui <- dashboardPage(
                                           menuSubItem("Flow Map", tabName = "Flow_Map"),
                                           menuSubItem("Trip Generator and Receiver", tabName = "flow_Bar_Graph"),
                                           menuSubItem("Origin-Destination Matrix", tabName = "Origin-Destination")),
-                                 menuItem('  EDA', tabName = 'EDA_Model', icon = icon("wpexplorer")),
+                                 menuItem('EDA', tabName = 'EDA_Model', icon = icon("wpexplorer")),
                                  menuItem('Gravity Model', tabName = 'Gravity_Model', icon = icon("chart-line"))
                      )
     ), # end of DashboardSiderBar
@@ -58,7 +58,7 @@ ui <- dashboardPage(
                                    h2("Links"),
                                    a("Github", href = "https://github.com/cjy93/LTA_bus_analysis"),
                                    br(),
-                                   a("Wikipedia", href = "https://wiki.smu.edu.sg/1920t2isss608/Group08_proposal"),
+                                   a("Wikipedia", href = "https://wiki.smu.edu.sg/1920t2isss608/Group08_proposal")
                             )
                             
                         )
@@ -288,14 +288,14 @@ ui <- dashboardPage(
                                             min = 6,
                                             max = 23,
                                             step = 1,
-                                            value = 8),
+                                            value = 8)
                                 
                             ),
                             
                             mainPanel(
                                 leafletOutput("map_my", height = 700),                                   
                                 br(),
-                                plotlyOutput("trendPlot_my", , height = 400),                                 
+                                plotlyOutput("trendPlot_my",height = 400),                                 
                                 br(),
                                 DT::dataTableOutput("tbl_my")
                                 
@@ -353,6 +353,46 @@ ui <- dashboardPage(
                         )
                     )
             ), #end of tabname "Centrality" 
+            
+            tabItem(tabName = 'EDA_Model',
+                    fluidPage(
+                        titlePanel("EDA on Centrality Measures"),
+                        sidebarLayout(
+                            sidebarPanel(
+                                h3("For Density Plots"),
+                                radioButtons("densityPlotJY", label = h4("Choose Y or X density Plots"),
+                                             choices = list("X" ="X" , "Y" = "Y"), 
+                                             selected = "X"),
+                             
+                                conditionalPanel(
+                                    condition = "input.densityPlotJY=='X'",
+                                    radioButtons("radioDensityJY", label = h4("Standise axis or Original Axis for density plot"),
+                                                 choices = list("Standard" ="Standard" , "Original" = "Original"), 
+                                                 selected = "Original")#,
+                                    # condition = "input.densityPlotJY == 'Y'",
+                                    # helpText("No selection for limits")
+                                ),
+                                h3("For Correlation Matrix"),
+                                selectInput("shape", label = h4("Select Shape"), 
+                                            choices = list("square" ="square", "circle" = "circle"), 
+                                            selected = "circle"),
+                                selectInput("typeShape", label = h4("Select type"), 
+                                            choices = list("full" ="full", "lower" = "lower", "upper" = "upper"), 
+                                            selected = "full")
+                               
+                                
+                            ),
+                            mainPanel(
+                                tabsetPanel(
+                                    tabPanel("Density Plots",plotOutput("Density_jy") ),
+                                    tabPanel("Correlation Matrix",plotOutput("corrplot_jy")),
+                                    tabPanel("Bivariate analysis", plotlyOutput("bivariate_jy"))
+                                )
+                                
+                            )
+                        )
+                    )
+            ), # end of tab 'EDA_model'
             
             tabItem(tabName = 'Gravity_Model',
                     fluidPage(
