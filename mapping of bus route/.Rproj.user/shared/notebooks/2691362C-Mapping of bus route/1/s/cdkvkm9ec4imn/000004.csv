@@ -1,5 +1,0 @@
-"0","bus_sf <- st_as_sf(busroute_busstop, "
-"0","                       coords = c(""X"", ""Y""),"
-"0","                       crs= 3414)"
-"2","Error: Can't find columns `X`, `Y` in `.data`.
-"

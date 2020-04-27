@@ -1,8 +1,0 @@
-"0","packages = c('igraph', 'tidygraph', 'ggraph', 'visNetwork', 'lubridate', 'tidyverse', 'ggplot2', 'ggmap', 'leaflet', 'ggiraph', 'sf', 'tmap')"
-"0",""
-"0","for(p in packages){library"
-"0","  if(!require(p, character.only = T)){"
-"0","    install.packages(p)"
-"0","  }"
-"0","  library(p, character.only = T)"
-"0","}"

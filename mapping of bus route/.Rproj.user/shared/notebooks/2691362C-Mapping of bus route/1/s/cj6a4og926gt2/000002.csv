@@ -1,6 +1,0 @@
-"0","#register_google(key = ) #create your own key"
-"0",""
-"0","map <- get_map(location = c(lon = 103.8279248, lat = 1.3438295), zoom=11, source = ""google"", maptype = 'roadmap')"
-"0",""
-"0","p <- ggmap(map) "
-"0","p"
