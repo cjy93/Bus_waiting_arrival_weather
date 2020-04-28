@@ -1,2 +1,0 @@
-"0","GAStech_edges$SentDate  = dmy(GAStech_edges$SentDate)"
-"0","GAStech_edges$Weekday = wday(GAStech_edges$SentDate, label = TRUE, abbr = FALSE)"

@@ -1,8 +1,0 @@
-"0",""
-"0","top_bus <- c('51','61','961','66','67','14','30','143','10','147','178','197','154','167','166','174','196','171','2','12','21','170','970','13')"
-"0",""
-"0","busroute <- read_csv('data/bus_route_overall.csv')"
-"0","busroute$BusStopCode <- as.character(busroute$BusStopCode)"
-"0","busroute <- busroute[c('BusStopCode', 'Direction', 'Distance', 'ServiceNo', 'StopSequence')] %>%"
-"0","            dplyr::filter(ServiceNo %in% top_bus)"
-"0","busroute"
