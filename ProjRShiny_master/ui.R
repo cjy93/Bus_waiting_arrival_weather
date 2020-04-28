@@ -264,13 +264,13 @@ ui <- dashboardPage(
                                              choices = list("Singapore" = "SG", "Planning Area" = 'PA', 
                                                             "Subzone" = 'SZ'), selected = 'SG'),
                                 
-                                conditionalPanel(condition = "input.radio_my1=='SZ' or input.radio_my1=='PA'", 
+                                conditionalPanel(condition = "radio_my1=='SZ' or input.radio_my1=='PA'", 
                                                  selectizeInput(
                                                      'pa_my_1', 'Planning Area', choices = sort(unique(busstops_my$planning_area)),
                                                      selected = 'Ang Mo Kio'
                                                  )
                                 ), 
-                                conditionalPanel(condition = "input.radio_my1=='SZ'", 
+                                conditionalPanel(condition = "radio_my1=='SZ'", 
                                                  selectizeInput(
                                                      'sz_filter_my1', 'SubZone', choices = sort(unique(busstops_my$subzone_name_my))
                                                  )

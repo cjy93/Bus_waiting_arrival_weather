@@ -7,7 +7,7 @@ server <- function(input, output, session) {
   
   #https://mastering-shiny.org/action-dynamic.html
   sz_filter_my <- reactive({
-    filter(busstops, planning_area == input$pa_my_1)
+    dplyr::filter(busstops, planning_area == input$pa_my_1)
   })
   
   observeEvent(sz_filter_my(), {
@@ -22,42 +22,42 @@ server <- function(input, output, session) {
       location_my %>%
         dplyr::filter(Time == input$time_my)%>%
         dplyr::filter(Day == input$week_my)%>%
-        mutate(taps = TapIns)
+        dplyr::mutate(taps = TapIns)
     }
     
     else if (input$radio_my1 == 'SG' & input$radio_my_taps == 'tap_outs') {
       location_my %>%
         dplyr::filter(Time == input$time_my)%>%
         dplyr::filter(Day == input$week_my)%>%
-        mutate(taps = TapOuts)
+        dplyr::mutate(taps = TapOuts)
     }
     
     else if (input$radio_my1 == 'PA'& input$radio_my_taps == 'tap_ins') {
       location_my %>% dplyr::filter(PlanningArea == input$pa_my_1)%>% 
         dplyr::filter(Time == input$time_my)%>%
         dplyr::filter(Day == input$week_my)%>%
-        mutate(taps = TapIns)
+        dplyr::mutate(taps = TapIns)
     }
 
     else if (input$radio_my1 == 'PA'& input$radio_my_taps == 'tap_outs') {
       location_my %>% dplyr::filter(PlanningArea == input$pa_my_1)%>% 
         dplyr::filter(Time == input$time_my)%>%
         dplyr::filter(Day == input$week_my)%>%
-        mutate(taps = TapOuts)
+        dplyr::mutate(taps = TapOuts)
     }
         
     else if (input$radio_my1 == 'SZ'& input$radio_my_taps == 'tap_ins'){
       location_my %>% dplyr::filter(subzone_name_my == input$sz_filter_my1)%>% 
         dplyr::filter(Time == input$time_my)%>%
         dplyr::filter(Day == input$week_my)%>%
-        mutate(taps = TapIns)
+        dplyr::mutate(taps = TapIns)
     }
     
     else if (input$radio_my1 == 'SZ'& input$radio_my_taps == 'tap_outs'){
       location_my %>% dplyr::filter(subzone_name_my == input$sz_filter_my1)%>% 
         dplyr::filter(Time == input$time_my)%>%
         dplyr::filter(Day == input$week_my)%>%
-        mutate(taps = TapOuts)
+        dplyr::mutate(taps = TapOuts)
     }   
     
   })
@@ -96,9 +96,9 @@ server <- function(input, output, session) {
   
   output$tbl_my <- DT::renderDT({
     DT::datatable(
-      location_my_map()[c('PlanningArea', 'subzone_name_my', 'Day', 'Time', 'Description', 'RoadName', 'TapIns', 'TapOuts')]%>%
-        rename(c(SubzoneName = subzone_name_my))%>%
-        arrange(desc(TapIns)),
+      location_my_map() <- location_my_map()[c('PlanningArea', 'subzone_name_my', 'Day', 'Time', 'Description', 'RoadName', 'TapIns', 'TapOuts')],
+      location_my_map() <-  plyr::rename(c(location_my_map(),'subzone_name_my' = 'SubzoneName')),
+      location_my_map() <-  location_my_map() %>% dplyr::arrange(desc(TapIns)),
       extensions = "Scroller",
       style = "bootstrap",
       class = "compact",
@@ -178,73 +178,73 @@ server <- function(input, output, session) {
     if (input$radio_my2 == 'SG' & input$radio_my3 == 'between_my_filter') {
       map_table%>%
         dplyr::filter(between.f >= input$centrality_filter[1] & between.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = between.f)
+        dplyr::mutate(combined.f = between.f)
     }
     
     else if (input$radio_my2 == 'SG' & input$radio_my3 == 'closeness_my_filter') {
       map_table%>%
         dplyr::filter(closeness.f >= input$centrality_filter[1] & closeness.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = closeness.f)
+        dplyr::mutate(combined.f = closeness.f)
     }
     
     else if (input$radio_my2 == 'SG' & input$radio_my3 == 'degree_my_filter') {
       map_table%>%
       dplyr::filter(degree.f >= input$centrality_filter[1] & degree.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = degree.f)
+        dplyr::mutate(combined.f = degree.f)
     }    
     
     else if (input$radio_my2 == 'SG' & input$radio_my3 == 'eigen_my_filter') {
       map_table%>%
       dplyr::filter(eigen.f >= input$centrality_filter[1] & eigen.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = eigen.f)
+        dplyr::mutate(combined.f = eigen.f)
     }   
     
     else if (input$radio_my2 == 'PA' & input$radio_my3 == 'between_my_filter') {
       map_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
         dplyr::filter(between.f >= input$centrality_filter[1] & between.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = between.f)
+        dplyr::mutate(combined.f = between.f)
     }
     
     else if (input$radio_my2 == 'PA' & input$radio_my3 == 'closeness_my_filter') {
       map_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
         dplyr::filter(closeness.f >= input$centrality_filter[1] & closeness.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = closeness.f)     
+        dplyr::mutate(combined.f = closeness.f)     
     }
     
     else if (input$radio_my2 == 'PA' & input$radio_my3 == 'degree_my_filter') {
       map_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
         dplyr::filter(degree.f >= input$centrality_filter[1] & degree.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = degree.f)
+        dplyr::mutate(combined.f = degree.f)
     }
     
     else if (input$radio_my2 == 'PA' & input$radio_my3 == 'eigen_my_filter') {
       map_table %>% dplyr::filter(planning_area == input$pa_my_2)%>%
         dplyr::filter(eigen.f >= input$centrality_filter[1] & eigen.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = eigen.f)
+        dplyr::mutate(combined.f = eigen.f)
     }
     
     else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'between_my_filter') {
       map_table %>% dplyr::filter(subzone_name_my == input$sz_filter_my_2)%>%
         dplyr::filter(between.f >= input$centrality_filter[1] & between.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = between.f)
+        dplyr::mutate(combined.f = between.f)
     }
     
     else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'closeness_my_filter') {
       map_table %>% dplyr::filter(subzone_name_my == input$sz_filter_my_2)%>%
         dplyr::filter(closeness.f >= input$centrality_filter[1] & closeness.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = closeness.f)      
+        dplyr::mutate(combined.f = closeness.f)      
     }
     
     else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'degree_my_filter') {
       map_table %>% dplyr::filter(subzone_name_my == input$sz_filter_my_2)%>%
         dplyr::filter(degree.f >= input$centrality_filter[1] & degree.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = degree.f)
+        dplyr::mutate(combined.f = degree.f)
     }
     
     else if (input$radio_my2 == 'SZ' & input$radio_my3 == 'eigen_my_filter') {
       map_table %>% dplyr::filter(subzone_name_my == input$sz_filter_my_2)%>%
         dplyr::filter(eigen.f >= input$centrality_filter[1] & eigen.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = eigen.f)
+        dplyr::mutate(combined.f = eigen.f)
     }
   })
   
@@ -252,25 +252,25 @@ server <- function(input, output, session) {
     if (input$radio_my2 == 'SG' & input$radio_my3 == 'between_my_filter') {
       edge_table %>%
       dplyr::filter(between.f >= input$centrality_filter[1] & between.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = between.f)
+        dplyr::mutate(combined.f = between.f)
     }
     
     else if (input$radio_my2 == 'SG' & input$radio_my3 == 'closeness_my_filter') {
       edge_table %>%
       dplyr::filter(closeness.f >= input$centrality_filter[1] & closeness.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = closeness.f)
+        dplyr::mutate(combined.f = closeness.f)
     }
     
     else if (input$radio_my2 == 'SG' & input$radio_my3 == 'degree_my_filter') {
       edge_table %>%
       dplyr::filter(degree.f >= input$centrality_filter[1] & degree.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = degree.f)
+        dplyr::mutate(combined.f = degree.f)
     }    
     
     else if (input$radio_my2 == 'SG' & input$radio_my3 == 'eigen_my_filter') {
       edge_table %>%
       dplyr::filter(eigen.f >= input$centrality_filter[1] & eigen.f <= input$centrality_filter[2])%>%
-        mutate(combined.f = eigen.f)
+        dplyr::mutate(combined.f = eigen.f)
     }   
     
     else if (input$radio_my2 == 'PA' & input$radio_my3 == 'between_my_filter') {
@@ -364,8 +364,8 @@ server <- function(input, output, session) {
 
   output$tbl_my_2 <- DT::renderDT({
     DT::datatable(
-      my_map_centrality_node()[c('planning_area', 'BusStopCode', 'RoadName', 'Description', 'between.f', 'closeness.f', 'eigen.f', 'degree.f')]%>%
-        rename(c(PlanningArea = planning_area, BetweennessCentrality = between.f, ClosenessCentrality = closeness.f, EigenvalueCentrality= eigen.f, DegreeCentrality = degree.f)),
+      my_map_centrality_node() <- my_map_centrality_node()[c('planning_area', 'BusStopCode', 'RoadName', 'Description', 'between.f', 'closeness.f', 'eigen.f', 'degree.f')],
+      my_map_centrality_node() <-  plyr::rename(my_map_centrality_node(), c('planning_area' = 'PlanningArea', 'between.f' = 'BetweennessCentrality' , 'closeness.f' = 'ClosenessCentrality', 'eigen.f' = 'EigenvalueCentrality', 'degree.f'= 'DegreeCentrality')),
       extensions = "Scroller",
       style = "bootstrap",
       class = "compact",

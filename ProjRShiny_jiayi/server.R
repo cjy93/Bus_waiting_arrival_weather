@@ -1131,19 +1131,19 @@ server <- function(input, output, session) {
      
      
      # reactive linear model inputs from y and x from UI
-	linear1 <- reactive({
-       if (is.null(input$selectXvar)==FALSE && is.null(input$yVar)==FALSE){
-         print("input$selectXvar")
-         print(input$selectXvar)
-         print(class(input$selectXvar))
-         lis_new <-paste(input$selectXvar, collapse = "+")
-         print(lis_new)
-         print('input$yVar')
-         print(input$yVar)
-         print('input$yVar done')
-         fml = as.formula(sprintf('%s ~ %s ', input$yVar, lis_new))
-         fit = lm(fml, data=pass_central)
-         fit}})
+# 	linear1 <- reactive({
+#        if (is.null(input$selectXvar)==FALSE && is.null(input$yVar)==FALSE){
+#          print("input$selectXvar")
+#          print(input$selectXvar)
+#          print(class(input$selectXvar))
+#          lis_new <-paste(input$selectXvar, collapse = "+")
+#          print(lis_new)
+#          print('input$yVar')
+#          print(input$yVar)
+#          print('input$yVar done')
+#          fml = as.formula(sprintf('%s ~ %s ', input$yVar, lis_new))
+#          fit = lm(fml, data=pass_central)
+#          fit}})  # raw model before stepwise
      modelInOut = reactive({
        if (is.null(input$selectXvar)==FALSE && is.null(input$yVar)==FALSE){
        print("input$selectXvar")
@@ -1199,12 +1199,12 @@ server <- function(input, output, session) {
     # https://shiny.rstudio.com/reference/shiny/latest/plotOutput.html
     #input$newplot
 
-    # texts output
-     observe({
-      print("class linear")
-      print(linear1())
-      print("end of class linear")})
-    output$pred1p <- renderText({min(anova(linear1())$'Pr(>F)'[1:length(input$selectXvar)])})  # call col name
+    # # texts output
+    #  observe({
+    #   print("class linear")
+    #   print(linear1())
+    #   print("end of class linear")})
+    output$pred1p <- renderText({min(anova(modelInOut())$'Pr(>F)'[1:length(input$selectXvar)])})  # call col name
 
 
     output$pred1RSqAdj <- renderText({summary(modelInOut())[[9]][1]}) # adjusted R sq

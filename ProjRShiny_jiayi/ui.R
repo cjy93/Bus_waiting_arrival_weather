@@ -10,15 +10,15 @@ ui <- dashboardPage(
     dashboardSidebar(width = 200,
                      sidebarMenu(id = 'sbm',
                                  menuItem('Home', tabName = 'Home', icon=icon("home")),
+                                 menuItem('Passenger Volume', tabName = 'ProportionalSymbolMap_Diagrams', icon = icon("connectdevelop")),
+                                 menuItem('Bus Stop Centrality', tabName = 'Centrality', icon = icon("globe")),
                                  menuItem('Flow', tabName = 'Flow_Diagrams', icon = icon("bus"),startExpanded= TRUE,
                                     menuSubItem("Aggregation Filters", tabName = "Aggregation_Filters"),
                                     menuSubItem("Flow Map", tabName = "Flow_Map"),
                                     menuSubItem("Trip Generator and Receiver", tabName = "flow_Bar_Graph"),
                                     menuSubItem("Origin-Destination Matrix", tabName = "Origin-Destination")),
-                                 menuItem('Proportional Symbol_Map', tabName = 'ProportionalSymbolMap_Diagrams', icon = icon("connectdevelop")),
-                                 menuItem('Centrality', tabName = 'Centrality', icon = icon("globe")),
-                                 menuItem('Gravity Model', tabName = 'Gravity_Model', icon = icon("chart-line")),
-                                 menuItem('Download', tabName = 'Download', icon = icon("download"))# tabs are here!
+                                 menuItem('EDA', tabName = 'EDA', icon = icon("wpexplorer")),
+                                 menuItem('Gravity Model', tabName = 'Gravity_Model', icon = icon("chart-line"))# tabs are here!
                                 )
                     ), # end of DashboardSiderBar
     dashboardBody(
@@ -312,6 +312,21 @@ ui <- dashboardPage(
                     )
             ), #end of tabname "Centrality" 
             
+            tabItem(tabName = 'EDA',
+                    fluidPage(
+                        titlePanel("EDA"),
+                        
+                        sidebarLayout(
+                            sidebarPanel(
+                                
+                            ),
+                            
+                            mainPanel(
+                                
+                            )
+                        )
+                    )
+            ), #end of tabname "EDA" 
             tabItem(tabName = 'Gravity_Model',
                     fluidPage(
                         titlePanel("Gravity Model"),
@@ -377,23 +392,8 @@ ui <- dashboardPage(
                             )
                         )
                     )
-            ), #end of tabname "Gravity_Model" 
-            
-            tabItem(tabName = 'Download',
-                    fluidPage(
-                        titlePanel("Download"),
-                        
-                        sidebarLayout(
-                            sidebarPanel(
-                                
-                            ),
-                            
-                            mainPanel(
-                                
-                            )
-                        )
-                    )
-            ) #end of tabname "Download" 
+            ) #end of tabname "Gravity_Model" 
+           
         
         )# end of TabItems
     ) #end of dashboardBody
