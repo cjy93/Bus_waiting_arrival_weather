@@ -270,10 +270,10 @@ server <- function(input, output, session) {
   edge_id2_filtered_reactive <- reactive({
     
     # filter the Edges with temporary variable "node2" and "node3"
-    node2 <- node() %>% filter(name %in% dataInput_From() ) #%>% filter(district %in% input$district_from)
+    node2 <- node() %>% filter(name %in% dataInput_From() ) %>% filter(district %in% input$district_from)
     edge_id2_filtered <- edge_id2()[which(edge_id2()$from %in% node2$id) ,] 
     
-    node3 <- node() %>% filter(name %in% dataInput_To())  #%>% filter(district %in% input$district_to)
+    node3 <- node() %>% filter(name %in% dataInput_To())  %>% filter(district %in% input$district_to)
     edge_id2_filtered <- edge_id2_filtered[which(edge_id2_filtered$to %in% node3$id) ,] %>% filter(DAY_TYPE %in% input$checkGroup)
     edge_id2_filtered
     #}
