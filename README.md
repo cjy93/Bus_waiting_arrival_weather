@@ -1,4 +1,12 @@
 # LTA Bus Analysis
+
+The wiki page, incl Proposal, Research Paper, and Poster, is available at [this link](https://wiki.smu.edu.sg/1920t2isss608/Group08_proposal)
+Application is available at [this link](https://cjy93.shinyapps.io/projrshiny_master/)
+
+Author:
+[Chan Jiayi](https://www.linkedin.com/in/jiayi-chan123456/)
+[Mengyong Lee](https://www.linkedin.com/in/mylee1/)
+
 We will do a brief run through on how to run the files.
 First download /clone the whole package to your local machine. Open up "global.R", "ui.R", "server.R" on R studio. Go to either one of the files and "runApp()"
 
@@ -35,7 +43,3 @@ First download /clone the whole package to your local machine. Open up "global.R
 ## Regression Analysis
 ![Regression Analysis](gifs/regression.gif)   
 9. Similar to the above, we allow users to choose Y and X variables where Y are from tap in or tap out, X are from the 4 centrality measures in our topic, namely : Closeness, degree, betweeness and eigenvalue centrality. We do a regression model to find the p and adjusted R square values as well as check the model assumptions. The model is built upon transformed variables as the original variables are not normally distributed
-
-
-
-Our report is available at [this link](https://wiki.smu.edu.sg/1920t2isss608/Group08_proposal)
