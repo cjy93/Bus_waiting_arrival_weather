@@ -1,11 +1,11 @@
 # LTA Bus Analysis
 
-The wiki page, incl Proposal, Research Paper, and Poster, is available at [this link](https://wiki.smu.edu.sg/1920t2isss608/Group08_proposal)
-Application is available at [this link](https://cjy93.shinyapps.io/projrshiny_master/)
+The wiki page, incl Proposal, Research Paper, and Poster, is available at [this link](https://wiki.smu.edu.sg/1920t2isss608/Group08_proposal) <br/>
+Application is available at [this link](https://cjy93.shinyapps.io/projrshiny_master/)<br/>
 
-Author:
-[Chan Jiayi](https://www.linkedin.com/in/jiayi-chan123456/)
-[Mengyong Lee](https://www.linkedin.com/in/mylee1/)
+## Author:
+[Chan Jiayi](https://www.linkedin.com/in/jiayi-chan123456/)<br/>
+[Mengyong Lee](https://www.linkedin.com/in/mylee1/)<br/>
 
 We will do a brief run through on how to run the files.
 First download /clone the whole package to your local machine. Open up "global.R", "ui.R", "server.R" on R studio. Go to either one of the files and "runApp()"
